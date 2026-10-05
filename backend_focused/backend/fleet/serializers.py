@@ -102,3 +102,32 @@ class MaintenanceRecordSerializer(serializers.ModelSerializer):
                 "Inactive mechanics cannot be assigned new maintenance."
             )
         return mechanic
+
+
+class VehicleMaintenanceRecordSerializer(serializers.ModelSerializer):
+    """A maintenance record shown in the context of its vehicle, with the mechanic expanded."""
+
+    mechanic = MechanicSerializer(read_only=True)
+
+    class Meta:
+        model = MaintenanceRecord
+        fields = ["id", "maintenance_date", "maintenance_type", "cost", "notes", "mechanic"]
+
+
+class VehicleDetailSerializer(serializers.ModelSerializer):
+    office = OfficeSerializer(read_only=True)
+    maintenance_records = VehicleMaintenanceRecordSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Vehicle
+        fields = [
+            "id",
+            "vin",
+            "license_plate",
+            "make",
+            "model",
+            "year",
+            "is_active",
+            "office",
+            "maintenance_records",
+        ]

@@ -2,7 +2,8 @@ from decimal import Decimal
 
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Prefetch, Q
+from django.db.models.functions import Upper
 from django.utils import timezone
 
 MIN_VEHICLE_YEAR = 1900
@@ -36,6 +37,15 @@ class Office(TimestampedModel):
         return f"{self.name} ({self.city})"
 
 
+class VehicleQuerySet(models.QuerySet):
+    def with_maintenance_history(self) -> "VehicleQuerySet":
+        """Load the office and every maintenance record with its mechanic in two queries."""
+        maintenance_records = MaintenanceRecord.objects.select_related("mechanic").newest_first()
+        return self.select_related("office").prefetch_related(
+            Prefetch("maintenance_records", queryset=maintenance_records)
+        )
+
+
 class Vehicle(TimestampedModel):
     vin = models.CharField("VIN", max_length=17, unique=True, validators=[validate_vin])
     license_plate = models.CharField(max_length=20)
@@ -44,6 +54,8 @@ class Vehicle(TimestampedModel):
     year = models.PositiveSmallIntegerField(validators=[MinValueValidator(MIN_VEHICLE_YEAR)])
     office = models.ForeignKey(Office, on_delete=models.PROTECT, related_name="vehicles")
     is_active = models.BooleanField(default=True)
+
+    objects = VehicleQuerySet.as_manager()
 
     class Meta:
         ordering = ["id"]
@@ -60,7 +72,7 @@ class Vehicle(TimestampedModel):
             ),
         ]
         indexes = [
-            models.Index(fields=["make", "model"], name="vehicle_make_model_idx"),
+            models.Index(Upper("make"), Upper("model"), name="vehicle_upper_make_model_idx"),
         ]
 
     def __str__(self) -> str:
@@ -77,6 +89,11 @@ class Mechanic(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.certification_number})"
+
+
+class MaintenanceRecordQuerySet(models.QuerySet):
+    def newest_first(self) -> "MaintenanceRecordQuerySet":
+        return self.order_by("-maintenance_date", "-id")
 
 
 class MaintenanceRecord(TimestampedModel):
@@ -110,6 +127,8 @@ class MaintenanceRecord(TimestampedModel):
         validators=[MinValueValidator(Decimal("0"))],
     )
     notes = models.TextField(blank=True)
+
+    objects = MaintenanceRecordQuerySet.as_manager()
 
     class Meta:
         ordering = ["-maintenance_date", "-id"]
