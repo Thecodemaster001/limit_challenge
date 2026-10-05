@@ -1,12 +1,5 @@
-'use client';
-
-import { PageHeader } from '@/components/page-header';
-import { useAuth } from '@/lib/auth/auth-context';
+import { Dashboard } from '@/components/dashboard/dashboard';
 
 export default function DashboardPage() {
-  const { username } = useAuth();
-
-  return (
-    <PageHeader title="Dashboard" description={`Welcome back${username ? `, ${username}` : ''}.`} />
-  );
+  return <Dashboard />;
 }

@@ -4,12 +4,14 @@ import type {
   DuplicateCheckQuery,
   PaginatedVehicleList,
   PaginatedVehicleMaintenanceRecordList,
+  PaginatedVehicleNeedingMaintenanceList,
   Vehicle,
   VehicleCreatePayload,
   VehicleDetail,
   VehicleListQuery,
   VehicleMaintenanceHistoryQuery,
   VehicleOfficeAssignment,
+  VehiclesNeedingMaintenanceQuery,
   VehicleUpdatePayload,
 } from '@/lib/api/types';
 
@@ -60,5 +62,15 @@ export async function assignVehicleOffice(
   assignment: VehicleOfficeAssignment,
 ): Promise<Vehicle> {
   const { data } = await apiClient.post<Vehicle>(`/vehicles/${id}/assign/`, assignment);
+  return data;
+}
+
+export async function listVehiclesNeedingMaintenance(
+  query: VehiclesNeedingMaintenanceQuery,
+): Promise<PaginatedVehicleNeedingMaintenanceList> {
+  const { data } = await apiClient.get<PaginatedVehicleNeedingMaintenanceList>(
+    '/vehicles/needing-maintenance/',
+    { params: query },
+  );
   return data;
 }

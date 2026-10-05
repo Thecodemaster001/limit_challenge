@@ -40,3 +40,9 @@ export type PaginatedMechanicList = Schemas['PaginatedMechanicList'];
 export type MechanicListQuery = QueryOf<'mechanics_list'>;
 export type MechanicPayload = Schemas['MechanicRequest'];
 export type MechanicUpdatePayload = Schemas['PatchedMechanicRequest'];
+
+export type OfficeSummary = Schemas['OfficeSummary'];
+export type VehicleNeedingMaintenance = Schemas['VehicleNeedingMaintenance'];
+export type PaginatedVehicleNeedingMaintenanceList =
+  Schemas['PaginatedVehicleNeedingMaintenanceList'];
+export type VehiclesNeedingMaintenanceQuery = QueryOf<'vehicles_needing_maintenance_list'>;
