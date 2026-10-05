@@ -1,8 +1,10 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 
-import { listMechanics } from '@/lib/api/mechanics';
+import { useInvalidateFleetData } from '@/hooks/use-invalidate-fleet-data';
+import { createMechanic, deleteMechanic, listMechanics, updateMechanic } from '@/lib/api/mechanics';
+import type { MechanicListQuery, MechanicUpdatePayload } from '@/lib/api/types';
 import { queryKeys } from '@/lib/query-keys';
 
 const ACTIVE_MECHANIC_OPTIONS_QUERY = { is_active: true, page_size: 100, ordering: 'name' };
@@ -15,4 +17,32 @@ export function useActiveMechanicOptions() {
     select: (page) => page.results,
     staleTime: 5 * 60_000,
   });
+}
+
+export function useMechanicList(query: MechanicListQuery) {
+  return useQuery({
+    queryKey: queryKeys.mechanics.list(query),
+    queryFn: () => listMechanics(query),
+    placeholderData: keepPreviousData,
+  });
+}
+
+// Mechanic names appear in maintenance histories, so changes refresh fleet data too.
+export function useCreateMechanic() {
+  const invalidateFleetData = useInvalidateFleetData();
+  return useMutation({ mutationFn: createMechanic, onSuccess: invalidateFleetData });
+}
+
+export function useUpdateMechanic() {
+  const invalidateFleetData = useInvalidateFleetData();
+  return useMutation({
+    mutationFn: ({ id, changes }: { id: number; changes: MechanicUpdatePayload }) =>
+      updateMechanic(id, changes),
+    onSuccess: invalidateFleetData,
+  });
+}
+
+export function useDeleteMechanic() {
+  const invalidateFleetData = useInvalidateFleetData();
+  return useMutation({ mutationFn: deleteMechanic, onSuccess: invalidateFleetData });
 }

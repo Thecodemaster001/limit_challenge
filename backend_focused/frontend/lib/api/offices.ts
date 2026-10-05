@@ -1,7 +1,21 @@
 import { apiClient } from '@/lib/api-client';
-import type { OfficeListQuery, PaginatedOfficeList } from '@/lib/api/types';
+import type { Office, OfficeListQuery, OfficePayload, PaginatedOfficeList } from '@/lib/api/types';
 
 export async function listOffices(query: OfficeListQuery): Promise<PaginatedOfficeList> {
   const { data } = await apiClient.get<PaginatedOfficeList>('/offices/', { params: query });
   return data;
+}
+
+export async function createOffice(payload: OfficePayload): Promise<Office> {
+  const { data } = await apiClient.post<Office>('/offices/', payload);
+  return data;
+}
+
+export async function updateOffice(id: number, payload: OfficePayload): Promise<Office> {
+  const { data } = await apiClient.patch<Office>(`/offices/${id}/`, payload);
+  return data;
+}
+
+export async function deleteOffice(id: number): Promise<void> {
+  await apiClient.delete(`/offices/${id}/`);
 }

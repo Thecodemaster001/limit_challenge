@@ -26,14 +26,14 @@ import {
   MaintenanceRecordFormMode,
 } from '@/components/vehicles/maintenance-record-form-dialog';
 import { VehicleFormDialog } from '@/components/vehicles/vehicle-form-dialog';
-import { VehicleStatusChip } from '@/components/vehicles/vehicle-status-chip';
+import { ActiveStatusChip } from '@/components/active-status-chip';
 import { useDeleteMaintenanceRecord } from '@/hooks/use-maintenance-records';
 import { useVehicleDetail, useVehicleMaintenanceHistory } from '@/hooks/use-vehicles';
 import { parseApiError } from '@/lib/api-errors';
 import type { Vehicle, VehicleDetail, VehicleMaintenanceRecord } from '@/lib/api/types';
 import { formatDate, formatDaysAgo, formatMoney } from '@/lib/format';
 import { isMaintenanceDue } from '@/lib/maintenance-due';
-import { DEFAULT_PAGE_SIZE } from '@/lib/vehicle-search-params';
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination';
 
 function InfoCard({
   title,
@@ -207,7 +207,7 @@ export function VehicleDetails({ vehicleId }: { vehicleId: number }) {
           </Detail>
           <Detail label="Year">{details.year}</Detail>
           <Detail label="Status">
-            <VehicleStatusChip isActive={details.is_active ?? true} />
+            <ActiveStatusChip isActive={details.is_active ?? true} />
           </Detail>
         </InfoCard>
         <InfoCard

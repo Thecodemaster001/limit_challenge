@@ -19,7 +19,7 @@ import {
 import type { VehicleMaintenanceRecord } from '@/lib/api/types';
 import { formatDate, formatMoney } from '@/lib/format';
 import { MAINTENANCE_TYPE_LABELS } from '@/lib/maintenance-types';
-import { PAGE_SIZE_OPTIONS } from '@/lib/vehicle-search-params';
+import { PAGE_SIZE_OPTIONS } from '@/lib/pagination';
 
 interface MaintenanceHistoryTableProps {
   records: VehicleMaintenanceRecord[];

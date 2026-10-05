@@ -2,7 +2,7 @@
 
 import { Chip } from '@mui/material';
 
-export function VehicleStatusChip({ isActive }: { isActive: boolean }) {
+export function ActiveStatusChip({ isActive }: { isActive: boolean }) {
   return (
     <Chip
       size="small"

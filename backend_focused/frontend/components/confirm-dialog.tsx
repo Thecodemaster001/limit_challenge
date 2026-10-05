@@ -14,10 +14,12 @@ interface ConfirmDialogProps {
   open: boolean;
   title: string;
   description: ReactNode;
-  confirmLabel: string;
+  /** Without `onConfirm` the dialog only informs, e.g. when an action turned out to be blocked. */
+  confirmLabel?: string;
+  cancelLabel?: string;
   destructive?: boolean;
   isPending?: boolean;
-  onConfirm: () => void;
+  onConfirm?: () => void;
   onClose: () => void;
 }
 
@@ -26,6 +28,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  cancelLabel = 'Cancel',
   destructive = false,
   isPending = false,
   onConfirm,
@@ -35,20 +38,26 @@ export function ConfirmDialog({
     <Dialog open={open} onClose={isPending ? undefined : onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText>{description}</DialogContentText>
+        {typeof description === 'string' ? (
+          <DialogContentText>{description}</DialogContentText>
+        ) : (
+          description
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={isPending}>
-          Cancel
+          {cancelLabel}
         </Button>
-        <Button
-          onClick={onConfirm}
-          variant="contained"
-          color={destructive ? 'error' : 'primary'}
-          loading={isPending}
-        >
-          {confirmLabel}
-        </Button>
+        {onConfirm && (
+          <Button
+            onClick={onConfirm}
+            variant="contained"
+            color={destructive ? 'error' : 'primary'}
+            loading={isPending}
+          >
+            {confirmLabel}
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );

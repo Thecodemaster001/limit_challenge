@@ -1,14 +1,13 @@
 'use client';
 
 import { Box, FormControlLabel, MenuItem, Switch, TextField } from '@mui/material';
-import { useState } from 'react';
 
 import { FormDialog } from '@/components/form-dialog';
 import { useNotify } from '@/components/notifications';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useFormFields } from '@/hooks/use-form-fields';
 import { useOfficeOptions } from '@/hooks/use-offices';
 import { useCreateVehicle, useUpdateVehicle, useVehicleDuplicateCheck } from '@/hooks/use-vehicles';
-import { parseApiError } from '@/lib/api-errors';
 import type { Vehicle } from '@/lib/api/types';
 
 export type VehicleFormMode = { kind: 'create' } | { kind: 'edit'; vehicle: Vehicle };
@@ -66,9 +65,9 @@ export function VehicleFormDialog({
   onClose: () => void;
 }) {
   const editedVehicle = mode.kind === 'edit' ? mode.vehicle : undefined;
-  const [values, setValues] = useState(() => initialValues(mode));
-  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const { values, setField, fieldErrors, formError, showApiError } = useFormFields(() =>
+    initialValues(mode),
+  );
 
   const notify = useNotify();
   const { data: offices = [] } = useOfficeOptions();
@@ -94,7 +93,7 @@ export function VehicleFormDialog({
     debouncedLicensePlate === licensePlate;
 
   const errors: Partial<Record<keyof VehicleFormValues, string>> = {
-    ...serverErrors,
+    ...fieldErrors,
     ...(vinConflict && { vin: CONFLICT_MESSAGES.vin }),
     ...(licensePlateConflict && { license_plate: CONFLICT_MESSAGES.license_plate }),
   };
@@ -105,25 +104,6 @@ export function VehicleFormDialog({
     !values.model.trim() ||
     !values.year ||
     (!editedVehicle && !values.office);
-
-  function setField<Field extends keyof VehicleFormValues>(
-    field: Field,
-    value: VehicleFormValues[Field],
-  ) {
-    setValues((current) => ({ ...current, [field]: value }));
-    setServerErrors((current) => {
-      const remaining = { ...current };
-      delete remaining[field];
-      return remaining;
-    });
-    setFormError(null);
-  }
-
-  function handleError(error: unknown) {
-    const details = parseApiError(error);
-    setServerErrors(details.fieldErrors);
-    setFormError(details.message);
-  }
 
   function handleSaved(vehicle: Vehicle, action: 'added' | 'updated') {
     notify(`Vehicle ${vehicle.license_plate} ${action}.`);
@@ -142,12 +122,12 @@ export function VehicleFormDialog({
     if (editedVehicle) {
       updateVehicle.mutate(
         { id: editedVehicle.id, changes: payload },
-        { onSuccess: (vehicle) => handleSaved(vehicle, 'updated'), onError: handleError },
+        { onSuccess: (vehicle) => handleSaved(vehicle, 'updated'), onError: showApiError },
       );
     } else {
       createVehicle.mutate(
         { ...payload, office: Number(values.office) },
-        { onSuccess: (vehicle) => handleSaved(vehicle, 'added'), onError: handleError },
+        { onSuccess: (vehicle) => handleSaved(vehicle, 'added'), onError: showApiError },
       );
     }
   }

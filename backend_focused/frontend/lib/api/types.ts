@@ -12,6 +12,7 @@ export type Credentials = Schemas['TokenObtainPairRequest'];
 export type Office = Schemas['Office'];
 export type PaginatedOfficeList = Schemas['PaginatedOfficeList'];
 export type OfficeListQuery = QueryOf<'offices_list'>;
+export type OfficePayload = Schemas['OfficeRequest'];
 
 export type Vehicle = Schemas['Vehicle'];
 export type VehicleCreatePayload = Schemas['VehicleRequest'];
@@ -37,3 +38,5 @@ export type MaintenanceRecordUpdatePayload = Schemas['PatchedMaintenanceRecordRe
 export type Mechanic = Schemas['Mechanic'];
 export type PaginatedMechanicList = Schemas['PaginatedMechanicList'];
 export type MechanicListQuery = QueryOf<'mechanics_list'>;
+export type MechanicPayload = Schemas['MechanicRequest'];
+export type MechanicUpdatePayload = Schemas['PatchedMechanicRequest'];

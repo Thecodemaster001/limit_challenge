@@ -18,9 +18,10 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 
-import { VehicleStatusChip } from '@/components/vehicles/vehicle-status-chip';
+import { ActiveStatusChip } from '@/components/active-status-chip';
 import type { Vehicle } from '@/lib/api/types';
-import { PAGE_SIZE_OPTIONS, VehicleSortField } from '@/lib/vehicle-search-params';
+import { PAGE_SIZE_OPTIONS } from '@/lib/pagination';
+import { VehicleSortField } from '@/lib/vehicle-search-params';
 
 const COLUMNS: { label: string; sortField?: VehicleSortField; align?: 'right' }[] = [
   { label: 'License plate', sortField: 'license_plate' },
@@ -117,7 +118,7 @@ export function VehicleTable({
                 </TableCell>
                 <TableCell>{vehicle.office_name}</TableCell>
                 <TableCell>
-                  <VehicleStatusChip isActive={vehicle.is_active ?? true} />
+                  <ActiveStatusChip isActive={vehicle.is_active ?? true} />
                 </TableCell>
                 <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                   <Tooltip title="Edit">

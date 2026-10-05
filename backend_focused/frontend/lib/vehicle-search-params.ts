@@ -1,11 +1,10 @@
 import type { VehicleListQuery } from '@/lib/api/types';
 import { parseApiDate, toApiDate } from '@/lib/format';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/pagination';
 
 export const VEHICLE_SORT_FIELDS = ['license_plate', 'make', 'model', 'year'] as const;
 export type VehicleSortField = (typeof VEHICLE_SORT_FIELDS)[number];
 
-export const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
-export const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
 const MAX_TEXT_LENGTH = 100;
 
 export const VEHICLE_FILTER_NAMES = [

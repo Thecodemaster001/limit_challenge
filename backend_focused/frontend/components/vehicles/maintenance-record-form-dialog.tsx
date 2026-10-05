@@ -1,7 +1,6 @@
 'use client';
 
 import { Box, InputAdornment, MenuItem, TextField } from '@mui/material';
-import { useState } from 'react';
 
 import { FormDialog } from '@/components/form-dialog';
 import { useNotify } from '@/components/notifications';
@@ -9,8 +8,8 @@ import {
   useCreateMaintenanceRecord,
   useUpdateMaintenanceRecord,
 } from '@/hooks/use-maintenance-records';
+import { useFormFields } from '@/hooks/use-form-fields';
 import { useActiveMechanicOptions } from '@/hooks/use-mechanics';
-import { parseApiError } from '@/lib/api-errors';
 import type { MaintenanceType, VehicleMaintenanceRecord } from '@/lib/api/types';
 import { toApiDate } from '@/lib/format';
 import { MAINTENANCE_TYPE_LABELS, MAINTENANCE_TYPES } from '@/lib/maintenance-types';
@@ -55,9 +54,9 @@ export function MaintenanceRecordFormDialog({
   onClose,
 }: MaintenanceRecordFormDialogProps) {
   const editedRecord = mode.kind === 'edit' ? mode.record : undefined;
-  const [values, setValues] = useState(() => initialValues(mode));
-  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const { values, setField, fieldErrors, formError, showApiError } = useFormFields(() =>
+    initialValues(mode),
+  );
 
   const notify = useNotify();
   const { data: activeMechanics = [] } = useActiveMechanicOptions();
@@ -74,25 +73,6 @@ export function MaintenanceRecordFormDialog({
 
   const isIncomplete =
     !values.maintenance_date || !values.maintenance_type || !values.mechanic || !values.cost;
-
-  function setField<Field extends keyof MaintenanceRecordFormValues>(
-    field: Field,
-    value: MaintenanceRecordFormValues[Field],
-  ) {
-    setValues((current) => ({ ...current, [field]: value }));
-    setServerErrors((current) => {
-      const remaining = { ...current };
-      delete remaining[field];
-      return remaining;
-    });
-    setFormError(null);
-  }
-
-  function handleError(error: unknown) {
-    const details = parseApiError(error);
-    setServerErrors(details.fieldErrors);
-    setFormError(details.message);
-  }
 
   function handleSaved(action: 'added' | 'updated') {
     notify(`Maintenance record ${action}.`);
@@ -111,12 +91,12 @@ export function MaintenanceRecordFormDialog({
     if (editedRecord) {
       updateRecord.mutate(
         { id: editedRecord.id, changes: payload },
-        { onSuccess: () => handleSaved('updated'), onError: handleError },
+        { onSuccess: () => handleSaved('updated'), onError: showApiError },
       );
     } else {
       createRecord.mutate(
         { ...payload, vehicle: vehicleId },
-        { onSuccess: () => handleSaved('added'), onError: handleError },
+        { onSuccess: () => handleSaved('added'), onError: showApiError },
       );
     }
   }
@@ -138,8 +118,8 @@ export function MaintenanceRecordFormDialog({
           type="date"
           value={values.maintenance_date}
           onChange={(event) => setField('maintenance_date', event.target.value)}
-          error={Boolean(serverErrors.maintenance_date)}
-          helperText={serverErrors.maintenance_date}
+          error={Boolean(fieldErrors.maintenance_date)}
+          helperText={fieldErrors.maintenance_date}
           required
           slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: today } }}
         />
@@ -148,8 +128,8 @@ export function MaintenanceRecordFormDialog({
           label="Type"
           value={values.maintenance_type}
           onChange={(event) => setField('maintenance_type', event.target.value as MaintenanceType)}
-          error={Boolean(serverErrors.maintenance_type)}
-          helperText={serverErrors.maintenance_type}
+          error={Boolean(fieldErrors.maintenance_type)}
+          helperText={fieldErrors.maintenance_type}
           required
         >
           {MAINTENANCE_TYPES.map((type) => (
@@ -163,8 +143,8 @@ export function MaintenanceRecordFormDialog({
           label="Mechanic"
           value={mechanicOptions.length ? values.mechanic : ''}
           onChange={(event) => setField('mechanic', event.target.value)}
-          error={Boolean(serverErrors.mechanic)}
-          helperText={serverErrors.mechanic ?? 'Only active mechanics can take new work.'}
+          error={Boolean(fieldErrors.mechanic)}
+          helperText={fieldErrors.mechanic ?? 'Only active mechanics can take new work.'}
           required
         >
           {mechanicOptions.map((mechanic) => (
@@ -179,8 +159,8 @@ export function MaintenanceRecordFormDialog({
           type="number"
           value={values.cost}
           onChange={(event) => setField('cost', event.target.value)}
-          error={Boolean(serverErrors.cost)}
-          helperText={serverErrors.cost}
+          error={Boolean(fieldErrors.cost)}
+          helperText={fieldErrors.cost}
           required
           slotProps={{
             input: { startAdornment: <InputAdornment position="start">$</InputAdornment> },
@@ -191,8 +171,8 @@ export function MaintenanceRecordFormDialog({
           label="Notes"
           value={values.notes}
           onChange={(event) => setField('notes', event.target.value)}
-          error={Boolean(serverErrors.notes)}
-          helperText={serverErrors.notes}
+          error={Boolean(fieldErrors.notes)}
+          helperText={fieldErrors.notes}
           multiline
           minRows={2}
           sx={{ gridColumn: { sm: 'span 2' } }}

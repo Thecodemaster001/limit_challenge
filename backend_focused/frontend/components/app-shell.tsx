@@ -10,6 +10,8 @@ import { useAuth } from '@/lib/auth/auth-context';
 const NAV_ITEMS = [
   { href: '/', label: 'Dashboard' },
   { href: '/vehicles', label: 'Vehicles' },
+  { href: '/offices', label: 'Offices' },
+  { href: '/mechanics', label: 'Mechanics' },
 ];
 
 function isActive(pathname: string, href: string): boolean {
