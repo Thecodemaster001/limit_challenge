@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Fleet Tracker Challenge',
-  description: 'Frontend scaffold for the take-home assignment',
+  title: 'Fleet Maintenance',
+  description: 'Manage vehicles, offices, mechanics and maintenance history.',
 };
 
 export default function RootLayout({

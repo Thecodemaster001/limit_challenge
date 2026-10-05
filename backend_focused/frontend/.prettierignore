@@ -1,0 +1,2 @@
+# Generated from the backend's OpenAPI schema (npm run generate:api-types).
+lib/api/schema.d.ts
