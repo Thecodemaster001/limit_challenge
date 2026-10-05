@@ -14,5 +14,10 @@ export type PaginatedOfficeList = Schemas['PaginatedOfficeList'];
 export type OfficeListQuery = QueryOf<'offices_list'>;
 
 export type Vehicle = Schemas['Vehicle'];
+export type VehicleCreatePayload = Schemas['VehicleRequest'];
+export type VehicleUpdatePayload = Schemas['PatchedVehicleUpdateRequest'];
 export type PaginatedVehicleList = Schemas['PaginatedVehicleList'];
 export type VehicleListQuery = QueryOf<'vehicles_list'>;
+
+export type DuplicateCheck = Schemas['DuplicateCheck'];
+export type DuplicateCheckQuery = QueryOf<'vehicles_duplicate_check_retrieve'>;

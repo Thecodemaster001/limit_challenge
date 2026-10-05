@@ -1,6 +1,9 @@
 'use client';
 
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {
+  IconButton,
   Link as MuiLink,
   Paper,
   Table,
@@ -11,6 +14,7 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
+  Tooltip,
 } from '@mui/material';
 import Link from 'next/link';
 
@@ -37,6 +41,8 @@ interface VehicleTableProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   onOrderingChange: (ordering: string) => void;
+  onEdit: (vehicle: Vehicle) => void;
+  onDelete: (vehicle: Vehicle) => void;
 }
 
 /** First click sorts ascending, the next one descending. */
@@ -53,6 +59,8 @@ export function VehicleTable({
   onPageChange,
   onPageSizeChange,
   onOrderingChange,
+  onEdit,
+  onDelete,
 }: VehicleTableProps) {
   const sortedField = ordering?.replace(/^-/, '');
   const sortDirection = ordering?.startsWith('-') ? 'desc' : 'asc';
@@ -85,6 +93,7 @@ export function VehicleTable({
                   </TableCell>
                 );
               })}
+              <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -109,6 +118,26 @@ export function VehicleTable({
                 <TableCell>{vehicle.office_name}</TableCell>
                 <TableCell>
                   <VehicleStatusChip isActive={vehicle.is_active ?? true} />
+                </TableCell>
+                <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                  <Tooltip title="Edit">
+                    <IconButton
+                      size="small"
+                      aria-label={`Edit ${vehicle.license_plate}`}
+                      onClick={() => onEdit(vehicle)}
+                    >
+                      <EditOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete">
+                    <IconButton
+                      size="small"
+                      aria-label={`Delete ${vehicle.license_plate}`}
+                      onClick={() => onDelete(vehicle)}
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}

@@ -1,14 +1,20 @@
 'use client';
 
+import AddIcon from '@mui/icons-material/Add';
 import { Box, Button, LinearProgress, Stack, Typography } from '@mui/material';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
 
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { useNotify } from '@/components/notifications';
 import { PageHeader } from '@/components/page-header';
 import { EmptyState, ErrorState, LoadingState } from '@/components/page-states';
 import { VehicleFilters } from '@/components/vehicles/vehicle-filters';
+import { VehicleFormDialog, VehicleFormMode } from '@/components/vehicles/vehicle-form-dialog';
 import { VehicleTable } from '@/components/vehicles/vehicle-table';
-import { useVehicleList } from '@/hooks/use-vehicles';
+import { useDeleteVehicle, useVehicleList } from '@/hooks/use-vehicles';
 import { parseApiError } from '@/lib/api-errors';
+import type { Vehicle } from '@/lib/api/types';
 import {
   clearVehicleFilters,
   hasInvalidDateRange,
@@ -27,6 +33,10 @@ export function VehicleSearch() {
   const hasFilters = hasVehicleFilters(search);
   const invalidDateRange = hasInvalidDateRange(search);
   const vehicles = useVehicleList(toVehicleListQuery(search), { enabled: !invalidDateRange });
+  const deleteVehicle = useDeleteVehicle();
+  const notify = useNotify();
+  const [formMode, setFormMode] = useState<VehicleFormMode | null>(null);
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
 
   function navigate(nextSearch: VehicleSearchState) {
     const query = serializeVehicleSearch(nextSearch);
@@ -35,6 +45,20 @@ export function VehicleSearch() {
   const changeSearch = (changes: Partial<VehicleSearchState>) =>
     navigate(updateVehicleSearch(search, changes));
   const clearFilters = () => navigate(clearVehicleFilters(search));
+  const openCreateForm = () => setFormMode({ kind: 'create' });
+
+  function confirmDelete() {
+    if (!vehicleToDelete) return;
+    const deletesLastRowOfPage = vehicles.data?.results.length === 1 && search.page > 1;
+    deleteVehicle.mutate(vehicleToDelete.id, {
+      onSuccess: () => {
+        notify(`Vehicle ${vehicleToDelete.license_plate} deleted.`);
+        setVehicleToDelete(null);
+        if (deletesLastRowOfPage) changeSearch({ page: search.page - 1 });
+      },
+      onError: (error) => notify(parseApiError(error).message, 'error'),
+    });
+  }
 
   function renderResults() {
     if (invalidDateRange) {
@@ -68,7 +92,12 @@ export function VehicleSearch() {
       ) : (
         <EmptyState
           title="No vehicles yet"
-          description="Vehicles appear here once they are added to the fleet."
+          description="Add the first vehicle to start tracking its maintenance."
+          action={
+            <Button variant="contained" onClick={openCreateForm}>
+              Add vehicle
+            </Button>
+          }
         />
       );
     }
@@ -93,6 +122,8 @@ export function VehicleSearch() {
             onPageChange={(page) => changeSearch({ page })}
             onPageSizeChange={(pageSize) => changeSearch({ page_size: pageSize })}
             onOrderingChange={(ordering) => changeSearch({ ordering })}
+            onEdit={(vehicle) => setFormMode({ kind: 'edit', vehicle })}
+            onDelete={setVehicleToDelete}
           />
         </Box>
       </Stack>
@@ -104,6 +135,11 @@ export function VehicleSearch() {
       <PageHeader
         title="Vehicles"
         description="Search the fleet by office, status, make, model and maintenance history."
+        actions={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateForm}>
+            Add vehicle
+          </Button>
+        }
       />
       <Stack spacing={3}>
         <VehicleFilters
@@ -114,6 +150,18 @@ export function VehicleSearch() {
         />
         {renderResults()}
       </Stack>
+
+      {formMode && <VehicleFormDialog mode={formMode} onClose={() => setFormMode(null)} />}
+      <ConfirmDialog
+        open={vehicleToDelete !== null}
+        title={`Delete ${vehicleToDelete?.license_plate ?? 'vehicle'}?`}
+        description="This also deletes its maintenance history. To keep the history, edit the vehicle and mark it inactive instead."
+        confirmLabel="Delete vehicle"
+        destructive
+        isPending={deleteVehicle.isPending}
+        onConfirm={confirmDelete}
+        onClose={() => setVehicleToDelete(null)}
+      />
     </>
   );
 }
