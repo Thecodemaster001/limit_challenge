@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "django_filters",
+    "drf_spectacular",
     "rest_framework",
     "fleet",
 ]
@@ -149,6 +150,16 @@ REST_FRAMEWORK = {
     ],
     # Serialize money as JSON numbers (e.g. 81250.50) rather than strings.
     "COERCE_DECIMAL_TO_STRING": False,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Fleet Maintenance API",
+    "DESCRIPTION": "Manage offices, vehicles, mechanics and their maintenance history.",
+    "VERSION": "1.0.0",
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": r"/api",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 JSON_UNDERSCOREIZE = {
