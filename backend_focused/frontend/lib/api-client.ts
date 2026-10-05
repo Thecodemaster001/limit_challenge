@@ -26,6 +26,13 @@ function expireSession(): void {
   handleSessionExpired();
 }
 
+
+function isRefreshRejected(refreshError: unknown): boolean {
+  if (!axios.isAxiosError(refreshError)) return true;
+  const status = refreshError.response?.status;
+  return status === 400 || status === 401;
+}
+
 const refreshAccessToken = createSingleFlight(async () => {
   const refresh = tokenStorage.getRefreshToken();
   if (!refresh) throw new Error('No refresh token');
@@ -65,7 +72,8 @@ apiClient.interceptors.response.use(
       request._retriedAfterRefresh = true;
       request.headers.Authorization = `Bearer ${accessToken}`;
       return apiClient(request);
-    } catch {
+    } catch (refreshError) {
+      if (!isRefreshRejected(refreshError)) return Promise.reject(refreshError);
       expireSession();
       return Promise.reject(error);
     }

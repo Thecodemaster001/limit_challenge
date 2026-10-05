@@ -30,16 +30,15 @@ function respond(config: InternalAxiosRequestConfig, status: number, data: unkno
   return Promise.resolve(response);
 }
 
-let refreshSucceeds: boolean;
+let refreshStatus: number;
 const refreshCalls = vi.fn();
 
 // The API accepts only the refreshed access token; the refresh endpoint issues it.
 function fakeApi(config: InternalAxiosRequestConfig) {
   if (config.url?.endsWith('/auth/token/refresh/')) {
     refreshCalls();
-    return refreshSucceeds
-      ? respond(config, 200, { access: VALID_ACCESS_TOKEN })
-      : respond(config, 401, { detail: 'Token is invalid or expired' });
+    if (refreshStatus === 200) return respond(config, 200, { access: VALID_ACCESS_TOKEN });
+    return respond(config, refreshStatus, { detail: 'Token is invalid or expired' });
   }
   const authorized = config.headers.Authorization === `Bearer ${VALID_ACCESS_TOKEN}`;
   return authorized ? respond(config, 200, { ok: true }) : respond(config, 401, {});
@@ -56,7 +55,7 @@ describe('apiClient authentication', () => {
     });
     apiClient.defaults.adapter = fakeApi;
     axios.defaults.adapter = fakeApi;
-    refreshSucceeds = true;
+    refreshStatus = 200;
     refreshCalls.mockClear();
     sessionExpired.mockClear();
     onSessionExpired(sessionExpired);
@@ -82,13 +81,24 @@ describe('apiClient authentication', () => {
   });
 
   it('signs out when the refresh token is no longer valid', async () => {
-    refreshSucceeds = false;
+    refreshStatus = 401;
 
     await expect(apiClient.get('/vehicles/')).rejects.toBeInstanceOf(AxiosError);
 
     expect(sessionExpired).toHaveBeenCalledTimes(1);
     expect(tokenStorage.getRefreshToken()).toBeNull();
     expect(tokenStorage.takeSignOutReason()).toBe('session-expired');
+  });
+
+  it('keeps the session when the refresh fails for another reason', async () => {
+    refreshStatus = 503;
+
+    await expect(apiClient.get('/vehicles/')).rejects.toMatchObject({
+      response: { status: 503 },
+    });
+
+    expect(sessionExpired).not.toHaveBeenCalled();
+    expect(tokenStorage.getRefreshToken()).toBe('refresh');
   });
 
   it('does not try to refresh when the login itself is rejected', async () => {

@@ -75,7 +75,7 @@ npm test                                   # Vitest unit tests
 npm run lint && npm run typecheck && npm run format && npm run build
 ```
 
-The 59 unit tests cover the logic that is easiest to get wrong: URL ↔ search state (invalid
+The 63 unit tests cover the logic that is easiest to get wrong: URL ↔ search state (invalid
 values, page reset, round trips), DRF error parsing, date handling across time zones, the
 maintenance-due rule, safe login redirects, and the token refresh flow (one shared refresh for
 concurrent 401s, sign-out when the refresh token has expired).

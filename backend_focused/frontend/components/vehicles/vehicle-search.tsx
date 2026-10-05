@@ -37,14 +37,19 @@ export function VehicleSearch() {
   const notify = useNotify();
   const [formMode, setFormMode] = useState<VehicleFormMode | null>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
+  const [filtersResetCount, setFiltersResetCount] = useState(0);
 
   function navigate(nextSearch: VehicleSearchState) {
     const query = serializeVehicleSearch(nextSearch);
     router.push(query ? `/vehicles?${query}` : '/vehicles', { scroll: false });
   }
+  const currentSearch = () => parseVehicleSearch(new URLSearchParams(window.location.search));
   const changeSearch = (changes: Partial<VehicleSearchState>) =>
-    navigate(updateVehicleSearch(search, changes));
-  const clearFilters = () => navigate(clearVehicleFilters(search));
+    navigate(updateVehicleSearch(currentSearch(), changes));
+  function clearFilters() {
+    setFiltersResetCount((count) => count + 1);
+    navigate(clearVehicleFilters(currentSearch()));
+  }
   const openCreateForm = () => setFormMode({ kind: 'create' });
 
   function confirmDelete() {
@@ -143,6 +148,7 @@ export function VehicleSearch() {
       />
       <Stack spacing={3}>
         <VehicleFilters
+          key={filtersResetCount}
           search={search}
           hasFilters={hasFilters}
           onChange={changeSearch}
