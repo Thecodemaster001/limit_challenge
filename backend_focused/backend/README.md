@@ -4,7 +4,8 @@ REST API for managing a fleet of vehicles, the offices they belong to, the mecha
 them and their maintenance history. Built with Django 5.2 and Django REST Framework, secured with
 JWT, documented with OpenAPI (Swagger) and shipped with Docker + PostgreSQL.
 
-The challenge brief is in [../README.md](../README.md). This submission covers the back-end.
+The challenge brief is in [../README.md](../README.md). This submission covers the back-end and a
+Next.js front-end, documented in [../frontend/README.md](../frontend/README.md).
 
 ## Contents
 
@@ -15,7 +16,6 @@ The challenge brief is in [../README.md](../README.md). This submission covers t
 - [Project structure](#project-structure)
 - [Assumptions](#assumptions)
 - [Design decisions and tradeoffs](#design-decisions-and-tradeoffs)
-- [Not included](#not-included)
 
 ## Running the project
 
@@ -24,7 +24,7 @@ The challenge brief is in [../README.md](../README.md). This submission covers t
 Requires Docker with Compose v2. From `backend_focused/`:
 
 ```bash
-docker compose up --build                                       # API on http://localhost:8000
+docker compose up --build                                       # API :8000, UI http://localhost:3000
 docker compose exec api python manage.py seed_fleet --clear     # load demo data
 docker compose exec api python manage.py createsuperuser        # user for API tokens and admin
 ```
@@ -50,6 +50,8 @@ python manage.py seed_fleet --clear
 python manage.py createsuperuser
 python manage.py runserver
 ```
+
+To run the front-end without Docker, see the [front-end README](../frontend/README.md#locally).
 
 ### Useful URLs
 
@@ -104,7 +106,7 @@ docker compose exec api pytest          # PostgreSQL, from backend_focused/
 pytest                                  # SQLite, from backend_focused/backend/ with the venv active
 ```
 
-89 tests (pytest + pytest-django + factory_boy) cover database constraints, validation messages,
+91 tests (pytest + pytest-django + factory_boy) cover database constraints, validation messages,
 every filter and report, boundary dates, error codes, the JWT flow and **query counts** (vehicle
 details takes 2 queries with 1 or 300 maintenance records). Report logic is tested against a fixed
 date, so results don't depend on when the suite runs. Endpoint tests use an authenticated client;
@@ -254,4 +256,3 @@ backend/
   hop per request without benefit.
 - A single settings module configured through environment variables. Its defaults target local
   development (`DEBUG=True`, a development secret key), so a deployment must set them explicitly.
-
