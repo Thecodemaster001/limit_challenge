@@ -5,6 +5,7 @@ import { PropsWithChildren, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 
+import { NotificationProvider } from '@/components/notifications';
 import { AuthProvider } from '@/lib/auth/auth-context';
 
 const MAX_QUERY_RETRIES = 2;
@@ -50,7 +51,7 @@ export default function Providers({ children }: PropsWithChildren) {
       <AuthProvider>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          {children}
+          <NotificationProvider>{children}</NotificationProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>

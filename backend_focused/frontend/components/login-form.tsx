@@ -3,7 +3,7 @@
 import { Alert, Box, Button, Card, CardContent, Stack, TextField, Typography } from '@mui/material';
 import { isAxiosError } from 'axios';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
+import { SubmitEvent, useEffect, useState } from 'react';
 
 import { useAuth } from '@/lib/auth/auth-context';
 import { safeRedirectPath } from '@/lib/safe-redirect-path';
@@ -32,7 +32,7 @@ export function LoginForm() {
     if (status === 'authenticated') router.replace(nextPath);
   }, [status, nextPath, router]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
     setErrorMessage(null);
