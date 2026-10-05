@@ -6,7 +6,7 @@ from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from fleet.models import MaintenanceRecord, Mechanic, Office, Vehicle
+from fleet.models import MIN_VEHICLE_YEAR, MaintenanceRecord, Mechanic, Office, Vehicle
 
 
 class UppercaseCharField(serializers.CharField):
@@ -131,3 +131,62 @@ class VehicleDetailSerializer(serializers.ModelSerializer):
             "office",
             "maintenance_records",
         ]
+
+
+class VehicleNeedingMaintenanceSerializer(VehicleSerializer):
+    last_maintenance_date = serializers.DateField(read_only=True, allow_null=True)
+
+    class Meta(VehicleSerializer.Meta):
+        fields = [*VehicleSerializer.Meta.fields, "last_maintenance_date"]
+
+
+class OfficeSummarySerializer(serializers.ModelSerializer):
+    active_vehicle_count = serializers.IntegerField(read_only=True)
+    maintenance_cost_last_year = serializers.DecimalField(
+        max_digits=14, decimal_places=2, read_only=True
+    )
+    last_maintenance = serializers.DateField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = Office
+        fields = [
+            "id",
+            "name",
+            "city",
+            "active_vehicle_count",
+            "maintenance_cost_last_year",
+            "last_maintenance",
+        ]
+
+
+class MechanicWorkloadSerializer(serializers.ModelSerializer):
+    maintenance_record_count = serializers.IntegerField(read_only=True)
+    total_maintenance_cost = serializers.DecimalField(
+        max_digits=14, decimal_places=2, read_only=True
+    )
+
+    class Meta:
+        model = Mechanic
+        fields = [
+            "id",
+            "name",
+            "certification_number",
+            "maintenance_record_count",
+            "total_maintenance_cost",
+        ]
+
+
+class MechanicWorkloadQuerySerializer(serializers.Serializer):
+    year = serializers.IntegerField(
+        required=False,
+        min_value=MIN_VEHICLE_YEAR,
+        help_text="Calendar year to report on. Defaults to the current year.",
+    )
+
+    def validate_year(self, year: int) -> int:
+        current_year = timezone.localdate().year
+        if year > current_year:
+            raise serializers.ValidationError(
+                f"Ensure this value is less than or equal to {current_year}."
+            )
+        return year
