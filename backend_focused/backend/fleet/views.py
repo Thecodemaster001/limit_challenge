@@ -9,6 +9,8 @@ from rest_framework.response import Response
 from fleet.filters import MaintenanceRecordFilterSet, VehicleFilterSet
 from fleet.models import MaintenanceRecord, Mechanic, Office, Vehicle
 from fleet.serializers import (
+    DuplicateCheckQuerySerializer,
+    DuplicateCheckSerializer,
     MaintenanceRecordSerializer,
     MechanicSerializer,
     MechanicWorkloadQuerySerializer,
@@ -18,7 +20,9 @@ from fleet.serializers import (
     VehicleDetailSerializer,
     VehicleMaintenanceRecordSerializer,
     VehicleNeedingMaintenanceSerializer,
+    VehicleOfficeAssignmentSerializer,
     VehicleSerializer,
+    VehicleUpdateSerializer,
 )
 
 
@@ -62,8 +66,12 @@ class VehicleViewSet(SerializerClassByActionMixin, viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
     serializer_class_by_action = {
         "retrieve": VehicleDetailSerializer,
+        "update": VehicleUpdateSerializer,
+        "partial_update": VehicleUpdateSerializer,
         "maintenance_history": VehicleMaintenanceRecordSerializer,
         "needing_maintenance": VehicleNeedingMaintenanceSerializer,
+        "assign": VehicleOfficeAssignmentSerializer,
+        "duplicate_check": DuplicateCheckSerializer,
     }
     filterset_class = VehicleFilterSet
     ordering_fields = ["make", "model", "year", "license_plate"]
@@ -99,6 +107,42 @@ class VehicleViewSet(SerializerClassByActionMixin, viewsets.ModelViewSet):
         page = self.paginate_queryset(vehicles)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        summary="Move a vehicle to another office",
+        description="Only the office assignment is written; other vehicle fields are untouched.",
+        request=VehicleOfficeAssignmentSerializer,
+        responses=VehicleSerializer,
+    )
+    @action(detail=True, methods=["post"], filter_backends=[])
+    def assign(self, request: Request, pk: str | None = None) -> Response:
+        vehicle = self.get_object()
+        serializer = self.get_serializer(vehicle, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        vehicle.assign_to_office(serializer.validated_data["office"])
+        return Response(VehicleSerializer(vehicle).data)
+
+    @extend_schema(
+        summary="Check whether a VIN or license plate is already taken",
+        description=(
+            "A VIN conflicts with any other vehicle; a license plate only with another "
+            "active vehicle."
+        ),
+        parameters=[DuplicateCheckQuerySerializer],
+        responses=DuplicateCheckSerializer,
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="duplicate-check",
+        filter_backends=[],
+        pagination_class=None,
+    )
+    def duplicate_check(self, request: Request) -> Response:
+        query = DuplicateCheckQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        conflicts = Vehicle.objects.conflicting_fields(**query.validated_data)
+        return Response(DuplicateCheckSerializer({"conflicts": conflicts}).data)
 
 
 class MechanicViewSet(SerializerClassByActionMixin, viewsets.ModelViewSet):

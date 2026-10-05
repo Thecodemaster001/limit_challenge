@@ -57,17 +57,50 @@ class VehicleSerializer(serializers.ModelSerializer):
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         license_plate = attrs.get("license_plate", getattr(self.instance, "license_plate", None))
         is_active = attrs.get("is_active", getattr(self.instance, "is_active", True))
-        if is_active and license_plate:
-            conflicting_vehicles = Vehicle.objects.filter(
-                license_plate=license_plate, is_active=True
+        if is_active and Vehicle.objects.conflicting_fields(
+            license_plate=license_plate, exclude_id=getattr(self.instance, "pk", None)
+        ):
+            raise serializers.ValidationError(
+                {"license_plate": ["An active vehicle with this license plate already exists."]}
             )
-            if self.instance is not None:
-                conflicting_vehicles = conflicting_vehicles.exclude(pk=self.instance.pk)
-            if conflicting_vehicles.exists():
-                raise serializers.ValidationError(
-                    {"license_plate": ["An active vehicle with this license plate already exists."]}
-                )
         return attrs
+
+
+class VehicleUpdateSerializer(VehicleSerializer):
+    """Vehicle edits. Moving to another office goes through the assign endpoint."""
+
+    class Meta(VehicleSerializer.Meta):
+        read_only_fields = ["office"]
+
+
+class VehicleOfficeAssignmentSerializer(serializers.Serializer):
+    office = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all())
+
+    def validate_office(self, office: Office) -> Office:
+        if self.instance is not None and self.instance.office_id == office.pk:
+            raise serializers.ValidationError("The vehicle is already assigned to this office.")
+        return office
+
+
+class DuplicateCheckQuerySerializer(serializers.Serializer):
+    vin = UppercaseCharField(required=False, max_length=17)
+    license_plate = UppercaseCharField(required=False, max_length=20)
+    exclude_id = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        help_text="Vehicle being edited, so it is not reported as conflicting with itself.",
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if not attrs.get("vin") and not attrs.get("license_plate"):
+            raise serializers.ValidationError("Provide vin, license_plate or both.")
+        return attrs
+
+
+class DuplicateCheckSerializer(serializers.Serializer):
+    conflicts = serializers.ListField(
+        child=serializers.ChoiceField(choices=["vin", "license_plate"])
+    )
 
 
 class MechanicSerializer(serializers.ModelSerializer):

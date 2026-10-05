@@ -113,6 +113,25 @@ class VehicleQuerySet(models.QuerySet):
             .order_by(F("last_maintenance_date").asc(nulls_first=True), "pk")
         )
 
+    def conflicting_fields(
+        self,
+        *,
+        vin: str | None = None,
+        license_plate: str | None = None,
+        exclude_id: int | None = None,
+    ) -> list[str]:
+        """Fields already taken by another vehicle: any VIN, or an active vehicle's plate."""
+        other_vehicles = self.exclude(pk=exclude_id) if exclude_id is not None else self
+        conflicts = []
+        if vin and other_vehicles.filter(vin=vin).exists():
+            conflicts.append("vin")
+        if (
+            license_plate
+            and other_vehicles.filter(license_plate=license_plate, is_active=True).exists()
+        ):
+            conflicts.append("license_plate")
+        return conflicts
+
 
 class Vehicle(TimestampedModel):
     vin = models.CharField("VIN", max_length=17, unique=True, validators=[validate_vin])
@@ -145,6 +164,11 @@ class Vehicle(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.year} {self.make} {self.model} ({self.license_plate})"
+
+    def assign_to_office(self, office: Office) -> None:
+        """Move the vehicle to `office`, writing only the office assignment."""
+        self.office = office
+        self.save(update_fields=["office", "updated_at"])
 
 
 class MechanicQuerySet(models.QuerySet):
