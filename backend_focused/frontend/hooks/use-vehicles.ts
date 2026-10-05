@@ -1,12 +1,21 @@
 'use client';
 
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 
-import type { DuplicateCheckQuery, VehicleListQuery, VehicleUpdatePayload } from '@/lib/api/types';
+import { useInvalidateFleetData } from '@/hooks/use-invalidate-fleet-data';
+import type {
+  DuplicateCheckQuery,
+  VehicleListQuery,
+  VehicleMaintenanceHistoryQuery,
+  VehicleUpdatePayload,
+} from '@/lib/api/types';
 import {
+  assignVehicleOffice,
   checkVehicleDuplicates,
   createVehicle,
   deleteVehicle,
+  getVehicle,
+  listVehicleMaintenanceHistory,
   listVehicles,
   updateVehicle,
 } from '@/lib/api/vehicles';
@@ -21,6 +30,21 @@ export function useVehicleList(query: VehicleListQuery, { enabled = true } = {})
   });
 }
 
+export function useVehicleDetail(id: number) {
+  return useQuery({
+    queryKey: queryKeys.vehicles.detail(id),
+    queryFn: () => getVehicle(id),
+  });
+}
+
+export function useVehicleMaintenanceHistory(id: number, query: VehicleMaintenanceHistoryQuery) {
+  return useQuery({
+    queryKey: queryKeys.vehicles.maintenanceHistory(id, query),
+    queryFn: () => listVehicleMaintenanceHistory(id, query),
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useVehicleDuplicateCheck(query: DuplicateCheckQuery) {
   return useQuery({
     queryKey: queryKeys.vehicles.duplicateCheck(query),
@@ -28,16 +52,6 @@ export function useVehicleDuplicateCheck(query: DuplicateCheckQuery) {
     enabled: Boolean(query.vin || query.license_plate),
     staleTime: 0,
   });
-}
-
-/** Vehicle changes affect vehicle lists, details and the office statistics. */
-function useInvalidateFleetData() {
-  const queryClient = useQueryClient();
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.vehicles.all }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.offices.all }),
-    ]);
 }
 
 export function useCreateVehicle() {
@@ -57,4 +71,13 @@ export function useUpdateVehicle() {
 export function useDeleteVehicle() {
   const invalidateFleetData = useInvalidateFleetData();
   return useMutation({ mutationFn: deleteVehicle, onSuccess: invalidateFleetData });
+}
+
+export function useAssignVehicleOffice() {
+  const invalidateFleetData = useInvalidateFleetData();
+  return useMutation({
+    mutationFn: ({ id, officeId }: { id: number; officeId: number }) =>
+      assignVehicleOffice(id, { office: officeId }),
+    onSuccess: invalidateFleetData,
+  });
 }

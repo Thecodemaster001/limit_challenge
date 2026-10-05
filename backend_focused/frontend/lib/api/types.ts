@@ -21,3 +21,19 @@ export type VehicleListQuery = QueryOf<'vehicles_list'>;
 
 export type DuplicateCheck = Schemas['DuplicateCheck'];
 export type DuplicateCheckQuery = QueryOf<'vehicles_duplicate_check_retrieve'>;
+
+export type VehicleDetail = Schemas['VehicleDetail'];
+export type VehicleMaintenanceRecord = Schemas['VehicleMaintenanceRecord'];
+export type PaginatedVehicleMaintenanceRecordList =
+  Schemas['PaginatedVehicleMaintenanceRecordList'];
+export type VehicleMaintenanceHistoryQuery = QueryOf<'vehicles_maintenance_history_list'>;
+export type VehicleOfficeAssignment = Schemas['VehicleOfficeAssignmentRequest'];
+
+export type MaintenanceType = Schemas['MaintenanceTypeEnum'];
+export type MaintenanceRecord = Schemas['MaintenanceRecord'];
+export type MaintenanceRecordCreatePayload = Schemas['MaintenanceRecordRequest'];
+export type MaintenanceRecordUpdatePayload = Schemas['PatchedMaintenanceRecordRequest'];
+
+export type Mechanic = Schemas['Mechanic'];
+export type PaginatedMechanicList = Schemas['PaginatedMechanicList'];
+export type MechanicListQuery = QueryOf<'mechanics_list'>;

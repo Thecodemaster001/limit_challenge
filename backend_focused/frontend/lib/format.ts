@@ -35,3 +35,10 @@ export function daysSince(value: string, today: Date = new Date()): number {
     (startOfToday.getTime() - parseApiDate(value).getTime()) / MILLISECONDS_PER_DAY,
   );
 }
+
+/** "today", "1 day ago", "14 days ago". */
+export function formatDaysAgo(value: string, today: Date = new Date()): string {
+  const days = daysSince(value, today);
+  if (days <= 0) return 'today';
+  return days === 1 ? '1 day ago' : `${days.toLocaleString(LOCALE)} days ago`;
+}

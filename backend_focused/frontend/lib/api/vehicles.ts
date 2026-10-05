@@ -3,9 +3,13 @@ import type {
   DuplicateCheck,
   DuplicateCheckQuery,
   PaginatedVehicleList,
+  PaginatedVehicleMaintenanceRecordList,
   Vehicle,
   VehicleCreatePayload,
+  VehicleDetail,
   VehicleListQuery,
+  VehicleMaintenanceHistoryQuery,
+  VehicleOfficeAssignment,
   VehicleUpdatePayload,
 } from '@/lib/api/types';
 
@@ -32,5 +36,29 @@ export async function checkVehicleDuplicates(query: DuplicateCheckQuery): Promis
   const { data } = await apiClient.get<DuplicateCheck>('/vehicles/duplicate-check/', {
     params: query,
   });
+  return data;
+}
+
+export async function getVehicle(id: number): Promise<VehicleDetail> {
+  const { data } = await apiClient.get<VehicleDetail>(`/vehicles/${id}/`);
+  return data;
+}
+
+export async function listVehicleMaintenanceHistory(
+  id: number,
+  query: VehicleMaintenanceHistoryQuery,
+): Promise<PaginatedVehicleMaintenanceRecordList> {
+  const { data } = await apiClient.get<PaginatedVehicleMaintenanceRecordList>(
+    `/vehicles/${id}/maintenance-history/`,
+    { params: query },
+  );
+  return data;
+}
+
+export async function assignVehicleOffice(
+  id: number,
+  assignment: VehicleOfficeAssignment,
+): Promise<Vehicle> {
+  const { data } = await apiClient.post<Vehicle>(`/vehicles/${id}/assign/`, assignment);
   return data;
 }
