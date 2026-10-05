@@ -151,6 +151,7 @@ REST_FRAMEWORK = {
     # Serialize money as JSON numbers (e.g. 81250.50) rather than strings.
     "COERCE_DECIMAL_TO_STRING": False,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "fleet.exceptions.api_exception_handler",
 }
 
 SPECTACULAR_SETTINGS = {

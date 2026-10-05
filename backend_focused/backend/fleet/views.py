@@ -1,11 +1,12 @@
 from django.db.models import QuerySet
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
-from rest_framework import serializers, viewsets
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from fleet.exceptions import ErrorDetailSerializer
 from fleet.filters import MaintenanceRecordFilterSet, VehicleFilterSet
 from fleet.models import MaintenanceRecord, Mechanic, Office, Vehicle
 from fleet.serializers import (
@@ -35,6 +36,20 @@ class SerializerClassByActionMixin:
         return self.serializer_class_by_action.get(self.action, super().get_serializer_class())
 
 
+def destroy_schema(conflict_description: str) -> dict:
+    return {
+        "destroy": extend_schema(
+            responses={
+                status.HTTP_204_NO_CONTENT: None,
+                status.HTTP_409_CONFLICT: OpenApiResponse(
+                    ErrorDetailSerializer, description=conflict_description
+                ),
+            }
+        )
+    }
+
+
+@extend_schema_view(**destroy_schema("The office still has vehicles assigned to it."))
 class OfficeViewSet(SerializerClassByActionMixin, viewsets.ModelViewSet):
     """Offices that vehicles are assigned to."""
 
@@ -145,6 +160,7 @@ class VehicleViewSet(SerializerClassByActionMixin, viewsets.ModelViewSet):
         return Response(DuplicateCheckSerializer({"conflicts": conflicts}).data)
 
 
+@extend_schema_view(**destroy_schema("The mechanic has maintenance records."))
 class MechanicViewSet(SerializerClassByActionMixin, viewsets.ModelViewSet):
     """Mechanics who perform maintenance. Inactive mechanics cannot take new work."""
 
