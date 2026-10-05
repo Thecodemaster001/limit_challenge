@@ -1,14 +1,15 @@
 # Fleet Maintenance API
 
 REST API for managing a fleet of vehicles, the offices they belong to, the mechanics who service
-them and their maintenance history. Built with Django 5.2 and Django REST Framework, documented
-with OpenAPI (Swagger) and shipped with Docker + PostgreSQL.
+them and their maintenance history. Built with Django 5.2 and Django REST Framework, secured with
+JWT, documented with OpenAPI (Swagger) and shipped with Docker + PostgreSQL.
 
 The challenge brief is in [../README.md](../README.md). This submission covers the back-end.
 
 ## Contents
 
 - [Running the project](#running-the-project)
+- [Authentication](#authentication)
 - [Running the tests](#running-the-tests)
 - [API overview](#api-overview)
 - [Project structure](#project-structure)
@@ -25,6 +26,7 @@ Requires Docker with Compose v2. From `backend_focused/`:
 ```bash
 docker compose up --build                                       # API on http://localhost:8000
 docker compose exec api python manage.py seed_fleet --clear     # load demo data
+docker compose exec api python manage.py createsuperuser        # user for API tokens and admin
 ```
 
 The API container waits for PostgreSQL to be healthy and applies migrations on start-up. The
@@ -45,6 +47,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_fleet --clear
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
@@ -52,12 +55,12 @@ python manage.py runserver
 
 | URL | Purpose |
 | --- | --- |
-| http://localhost:8000/api/docs/ | Swagger UI: every endpoint, with "Try it out" |
+| http://localhost:8000/api/docs/ | Swagger UI: every endpoint, with "Try it out" and "Authorize" |
 | http://localhost:8000/api/redoc/ | ReDoc reference |
 | http://localhost:8000/api/schema/ | OpenAPI 3 schema |
-| http://localhost:8000/api/ | DRF browsable API |
+| http://localhost:8000/api/ | DRF browsable API (log in via the link at the top right) |
 | http://localhost:8000/api/health/ | Health check (verifies the database connection) |
-| http://localhost:8000/admin/ | Django admin (`python manage.py createsuperuser` first) |
+| http://localhost:8000/admin/ | Django admin |
 
 ### Demo data
 
@@ -72,6 +75,28 @@ It is deterministic (`--seed`, default 42) and refuses to run on a non-empty dat
 
 Options: `--offices`, `--mechanics`, `--vehicles`, `--records`, `--seed`, `--clear`.
 
+## Authentication
+
+Every endpoint under `/api/` requires a JWT access token, except the health check, the API docs
+and the token endpoints themselves. Use the user created with `createsuperuser`:
+
+```bash
+# 1. Exchange credentials for an access token (30 min) and a refresh token (1 day)
+curl -X POST http://localhost:8000/api/auth/token/ \
+  -H "Content-Type: application/json" -d '{"username": "admin", "password": "<password>"}'
+
+# 2. Send the access token with each request
+curl http://localhost:8000/api/vehicles/ -H "Authorization: Bearer <access>"
+
+# 3. Get a new access token when it expires
+curl -X POST http://localhost:8000/api/auth/token/refresh/ \
+  -H "Content-Type: application/json" -d '{"refresh": "<refresh>"}'
+```
+
+In Swagger, call `POST /api/auth/token/`, click **Authorize** and paste the `access` value. The
+browsable API and the admin use a normal login session instead. Token lifetimes are set with
+`JWT_ACCESS_TOKEN_MINUTES` and `JWT_REFRESH_TOKEN_DAYS`.
+
 ## Running the tests
 
 ```bash
@@ -79,10 +104,11 @@ docker compose exec api pytest          # PostgreSQL, from backend_focused/
 pytest                                  # SQLite, from backend_focused/backend/ with the venv active
 ```
 
-76 tests (pytest + pytest-django + factory_boy) cover database constraints, validation messages,
-every filter and report, boundary dates, error codes and **query counts** (vehicle details takes
-2 queries with 1 or 300 maintenance records). Report logic is tested against a fixed date, so
-results don't depend on when the suite runs.
+89 tests (pytest + pytest-django + factory_boy) cover database constraints, validation messages,
+every filter and report, boundary dates, error codes, the JWT flow and **query counts** (vehicle
+details takes 2 queries with 1 or 300 maintenance records). Report logic is tested against a fixed
+date, so results don't depend on when the suite runs. Endpoint tests use an authenticated client;
+`test_authentication.py` covers real tokens.
 
 Linting, formatting and schema checks:
 
@@ -93,8 +119,9 @@ python manage.py spectacular --validate --fail-on-warn --file /dev/null
 
 ## API overview
 
-All endpoints live under `/api/`. Lists are paginated (`?page=`, `?page_size=` up to 100) and
-accept `?ordering=` on the documented fields. Full request and response schemas are in Swagger.
+All endpoints live under `/api/` and require a token (see [Authentication](#authentication)).
+Lists are paginated (`?page=`, `?page_size=` up to 100) and accept `?ordering=` on the documented
+fields. Full request and response schemas are in Swagger.
 
 | # | Endpoint | Description |
 | --- | --- | --- |
@@ -111,9 +138,10 @@ accept `?ordering=` on the documented fields. Full request and response schemas 
 Example:
 
 ```bash
-curl "http://localhost:8000/api/vehicles/?make=ford&is_active=true&maintenance_date_from=2026-01-01"
+curl "http://localhost:8000/api/vehicles/?make=ford&is_active=true&maintenance_date_from=2026-01-01" \
+  -H "Authorization: Bearer <access>"
 curl -X POST http://localhost:8000/api/vehicles/1/assign/ \
-  -H "Content-Type: application/json" -d '{"office": 2}'
+  -H "Authorization: Bearer <access>" -H "Content-Type: application/json" -d '{"office": 2}'
 ```
 
 ### Errors
@@ -121,6 +149,7 @@ curl -X POST http://localhost:8000/api/vehicles/1/assign/ \
 | Status | When | Body |
 | --- | --- | --- |
 | 400 | Validation errors, invalid query parameters | `{"field": ["message"]}` or `{"non_field_errors": [...]}` |
+| 401 | Missing, invalid or expired token; wrong credentials | `{"detail": "..."}` |
 | 404 | Unknown id | `{"detail": "..."}` |
 | 409 | Deleting an office that still has vehicles or a mechanic who has records; a concurrent write that hits a database constraint | `{"detail": "Cannot delete this office: it is still referenced by 3 vehicles."}` |
 
@@ -150,7 +179,8 @@ backend/
 - Inactive mechanics cannot be assigned new maintenance, but their existing records stay editable.
 - History is preserved: an office with vehicles or a mechanic with records cannot be deleted (409);
   deactivate them instead. Deleting a vehicle deletes its maintenance records.
-- No authentication, as the brief states.
+- The brief makes authentication optional; JWT was added as the bonus. Any authenticated user can
+  use every endpoint: there are no roles or per-office permissions.
 
 **Endpoints**
 - **Office summary:** "last 12 months" means the last 365 days including today. Cost and last
@@ -208,6 +238,15 @@ backend/
 - Lists use a stable ordering (primary key as tie-breaker) so pagination never repeats or skips
   rows.
 
+**Authentication**
+- JWT via `djangorestframework-simplejwt`, required by default (`IsAuthenticated`) so a new
+  endpoint is protected unless it explicitly opts out; only health, docs and token endpoints do.
+- Short-lived access tokens (30 minutes) with a refresh token (1 day) limit the damage of a leaked
+  token without forcing frequent logins. Tokens are stateless, so they cannot be revoked before
+  they expire.
+- Session authentication stays enabled alongside JWT so the browsable API and admin keep working
+  in a browser; API clients use the `Authorization: Bearer` header.
+
 **Operations**
 - PostgreSQL in Docker for realistic constraint and index behaviour; SQLite fallback for a
   zero-setup local run. The test suite passes on both.
@@ -219,6 +258,7 @@ backend/
 ## Not included
 
 - Front-end and demo video: this submission focuses on the back-end.
-- JWT authentication (optional bonus in the brief).
+- Token revocation (logout) and role-based permissions. Revocation would use simplejwt's token
+  blacklist app; roles would map to Django groups and DRF permission classes.
 - Continuous integration; the commands in [Running the tests](#running-the-tests) are what a
   pipeline would run.

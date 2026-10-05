@@ -1,6 +1,7 @@
 from django.db import DatabaseError, connection
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +14,9 @@ class HealthCheckSerializer(serializers.Serializer):
 
 class HealthCheckView(APIView):
     """Liveness probe that also verifies the database is reachable."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     @extend_schema(
         tags=["health"],
