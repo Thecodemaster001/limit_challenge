@@ -94,7 +94,7 @@ class VehicleViewSet(SerializerClassByActionMixin, viewsets.ModelViewSet):
     def get_queryset(self) -> QuerySet[Vehicle]:
         if self.action == "retrieve":
             return Vehicle.objects.with_maintenance_history()
-        return super().get_queryset()
+        return super().get_queryset().select_related("office")
 
     @extend_schema(
         summary="Maintenance history of a vehicle, newest first",
@@ -118,7 +118,9 @@ class VehicleViewSet(SerializerClassByActionMixin, viewsets.ModelViewSet):
     )
     @action(detail=False, methods=["get"], url_path="needing-maintenance", filter_backends=[])
     def needing_maintenance(self, request: Request) -> Response:
-        vehicles = Vehicle.objects.needing_maintenance(today=timezone.localdate())
+        vehicles = Vehicle.objects.needing_maintenance(today=timezone.localdate()).select_related(
+            "office"
+        )
         page = self.paginate_queryset(vehicles)
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)

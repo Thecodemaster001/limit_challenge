@@ -127,7 +127,7 @@ fields. Full request and response schemas are in Swagger.
 | --- | --- | --- |
 | 1 | `/offices/`, `/vehicles/`, `/mechanics/`, `/maintenance-records/` | CRUD (`GET`, `POST`, `GET/PUT/PATCH/DELETE {id}/`) |
 | 2 | `GET /offices/summary/` | Every office with active vehicle count, maintenance cost over the last 12 months and last maintenance date |
-| 3 | `GET /vehicles/?office=&is_active=&make=&model=&maintenance_date_from=&maintenance_date_to=&mechanic_certification=` | Vehicle search; all filters optional and combinable |
+| 3 | `GET /vehicles/?office=&is_active=&make=&model=&maintenance_date_from=&maintenance_date_to=&mechanic_certification=` | Vehicle search; all filters optional and combinable. Results include `office_name` |
 | 4 | `GET /vehicles/{id}/` | Vehicle with its office and full maintenance history, including each mechanic |
 | 5 | `GET /vehicles/{id}/maintenance-history/` | Paginated maintenance history, newest first |
 | 6 | `POST /vehicles/{id}/assign/` with `{"office": <id>}` | Move a vehicle to another office |
@@ -255,10 +255,3 @@ backend/
 - A single settings module configured through environment variables. Its defaults target local
   development (`DEBUG=True`, a development secret key), so a deployment must set them explicitly.
 
-## Not included
-
-- Front-end and demo video: this submission focuses on the back-end.
-- Token revocation (logout) and role-based permissions. Revocation would use simplejwt's token
-  blacklist app; roles would map to Django groups and DRF permission classes.
-- Continuous integration; the commands in [Running the tests](#running-the-tests) are what a
-  pipeline would run.

@@ -95,3 +95,18 @@ def test_ordering_breaks_ties_by_id(api_client):
     response = api_client.get("/api/vehicles/?ordering=make")
 
     assert [vehicle["id"] for vehicle in response.data["results"]] == [v.pk for v in vehicles]
+
+
+@pytest.mark.parametrize(
+    "url", ["/api/vehicles/?page_size=20", "/api/vehicles/needing-maintenance/?page_size=20"]
+)
+def test_lists_include_office_name_without_extra_queries(
+    api_client, django_assert_num_queries, url
+):
+    VehicleFactory.create_batch(5)  # each vehicle in its own office
+
+    with django_assert_num_queries(2):  # count + page
+        response = api_client.get(url)
+
+    assert len(response.data["results"]) == 5
+    assert all(vehicle["office_name"] for vehicle in response.data["results"])

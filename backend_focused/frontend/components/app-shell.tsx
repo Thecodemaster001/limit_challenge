@@ -7,7 +7,10 @@ import { PropsWithChildren } from 'react';
 
 import { useAuth } from '@/lib/auth/auth-context';
 
-const NAV_ITEMS = [{ href: '/', label: 'Dashboard' }];
+const NAV_ITEMS = [
+  { href: '/', label: 'Dashboard' },
+  { href: '/vehicles', label: 'Vehicles' },
+];
 
 function isActive(pathname: string, href: string): boolean {
   return href === '/' ? pathname === '/' : pathname.startsWith(href);

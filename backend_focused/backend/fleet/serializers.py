@@ -32,9 +32,21 @@ class OfficeSerializer(serializers.ModelSerializer):
 class VehicleSerializer(serializers.ModelSerializer):
     UPPERCASE_FIELDS = ("vin", "license_plate")
 
+    office_name = serializers.CharField(source="office.name", read_only=True)
+
     class Meta:
         model = Vehicle
-        fields = ["id", "vin", "license_plate", "make", "model", "year", "office", "is_active"]
+        fields = [
+            "id",
+            "vin",
+            "license_plate",
+            "make",
+            "model",
+            "year",
+            "office",
+            "office_name",
+            "is_active",
+        ]
         # Plate uniqueness depends on the incoming is_active value, so it is checked in validate().
         extra_kwargs = {"license_plate": {"validators": []}}
 

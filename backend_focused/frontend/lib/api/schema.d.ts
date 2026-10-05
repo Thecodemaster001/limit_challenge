@@ -578,6 +578,7 @@ export interface components {
             /** Format: int64 */
             year: number;
             office: number;
+            readonly office_name: string;
             is_active?: boolean;
         };
         VehicleDetail: {
@@ -612,6 +613,7 @@ export interface components {
             /** Format: int64 */
             year: number;
             office: number;
+            readonly office_name: string;
             is_active?: boolean;
             /** Format: date */
             readonly last_maintenance_date: string | null;
@@ -639,6 +641,7 @@ export interface components {
             /** Format: int64 */
             year: number;
             readonly office: number;
+            readonly office_name: string;
             is_active?: boolean;
         };
         /** @description Vehicle edits. Moving to another office goes through the assign endpoint. */
