@@ -6,7 +6,7 @@ interface BrandMarkProps {
 
 export default function BrandMark({ showName = true }: BrandMarkProps) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
       <Box
         component="svg"
         viewBox="0 0 24 24"
@@ -19,7 +19,7 @@ export default function BrandMark({ showName = true }: BrandMarkProps) {
         <rect x="6" y="15" width="6" height="2.2" rx="1.1" fill="#fff" opacity="0.6" />
       </Box>
       {showName && (
-        <Typography component="span" sx={{ fontSize: 14, fontWeight: 600 }}>
+        <Typography component="span" noWrap sx={{ fontSize: 14, fontWeight: 600 }}>
           Submission Tracker
         </Typography>
       )}

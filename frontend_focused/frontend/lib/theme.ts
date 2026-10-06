@@ -17,6 +17,13 @@ const focusRing = {
   outlineOffset: 1,
 };
 
+/**
+ * Mouse users get dense controls; fingers get targets of about 40px (Apple and Material
+ * recommend 44–48px). Matching on the input type keeps desktop compact.
+ */
+export const touchScreen = '@media (pointer: coarse)';
+export const TOUCH_TARGET_SIZE = 40;
+
 export const theme = createTheme({
   palette: {
     mode: 'light',
@@ -66,7 +73,12 @@ export const theme = createTheme({
     MuiButton: {
       defaultProps: { disableElevation: true, size: 'small' },
       styleOverrides: {
-        root: { borderRadius: 6, paddingInline: 10, minHeight: 30 },
+        root: {
+          borderRadius: 6,
+          paddingInline: 10,
+          minHeight: 30,
+          [touchScreen]: { minHeight: TOUCH_TARGET_SIZE },
+        },
         outlined: {
           borderColor: colors.borderStrong,
           color: colors.textPrimary,
@@ -77,7 +89,13 @@ export const theme = createTheme({
     },
     MuiIconButton: {
       defaultProps: { size: 'small' },
-      styleOverrides: { root: { borderRadius: 6, color: colors.textSecondary } },
+      styleOverrides: {
+        root: {
+          borderRadius: 6,
+          color: colors.textSecondary,
+          [touchScreen]: { minWidth: TOUCH_TARGET_SIZE, minHeight: TOUCH_TARGET_SIZE },
+        },
+      },
     },
     MuiPaper: {
       defaultProps: { elevation: 0 },
@@ -118,7 +136,13 @@ export const theme = createTheme({
     },
     MuiMenuItem: {
       styleOverrides: {
-        root: { fontSize: 13, minHeight: 32, marginInline: 4, borderRadius: 4 },
+        root: {
+          fontSize: 13,
+          minHeight: 32,
+          marginInline: 4,
+          borderRadius: 4,
+          [touchScreen]: { minHeight: 44 },
+        },
       },
     },
     MuiTooltip: {
@@ -147,7 +171,8 @@ export const theme = createTheme({
     MuiChip: {
       styleOverrides: {
         root: { borderRadius: 4, fontSize: 12, height: 24 },
-        sizeSmall: { height: 22 },
+        sizeSmall: { height: 22, [touchScreen]: { height: 32 } },
+        deleteIcon: { [touchScreen]: { fontSize: 20 } },
       },
     },
     MuiDialog: {

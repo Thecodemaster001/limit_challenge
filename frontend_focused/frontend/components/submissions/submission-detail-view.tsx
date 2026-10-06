@@ -33,6 +33,7 @@ import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts';
 import { useSubmissionNeighbors } from '@/lib/hooks/use-submission-neighbors';
 import { useSubmissionDetail } from '@/lib/hooks/use-submissions';
 import { listReturnPath } from '@/lib/list-return-path';
+import { touchScreen } from '@/lib/theme';
 import { SubmissionDetail } from '@/lib/types';
 
 const LIST_PATH = '/submissions';
@@ -56,6 +57,7 @@ function Breadcrumb({ current }: { current?: string }) {
         variant="body2"
         color="text.secondary"
         underline="hover"
+        sx={{ [touchScreen]: { py: 1.25 } }}
       >
         Submissions
       </Link>

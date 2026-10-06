@@ -53,6 +53,12 @@ function detailHref(submission: SubmissionListItem) {
   return `/submissions/${submission.id}`;
 }
 
+function companyDetails(submission: SubmissionListItem) {
+  return [submission.company.industry, submission.company.headquartersCity]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 function ActivityCounts({ submission }: { submission: SubmissionListItem }) {
   const counts = [
     {
@@ -189,10 +195,14 @@ export default function SubmissionTable({
                 >
                   {submission.company.legalName}
                 </Link>
-                <Typography variant="caption" color="text.secondary" component="p" noWrap>
-                  {[submission.company.industry, submission.company.headquartersCity]
-                    .filter(Boolean)
-                    .join(' · ')}
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  component="p"
+                  noWrap
+                  title={companyDetails(submission)}
+                >
+                  {companyDetails(submission)}
                 </Typography>
               </TableCell>
               <TableCell>
@@ -209,7 +219,7 @@ export default function SubmissionTable({
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
                   <PersonAvatar name={submission.owner.fullName} />
-                  <Typography variant="body2" noWrap>
+                  <Typography variant="body2" noWrap title={submission.owner.fullName}>
                     {submission.owner.fullName}
                   </Typography>
                 </Box>

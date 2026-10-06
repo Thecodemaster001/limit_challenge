@@ -69,8 +69,8 @@ function Sidebar({
           flexDirection: isCollapsed ? 'column' : 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 1,
-          px: isCollapsed ? 0 : 1,
+          gap: 0.5,
+          pl: isCollapsed ? 0 : 1,
           py: 0.5,
           mb: 2,
         }}

@@ -2,6 +2,7 @@ import { MailOutlineOutlined, PhoneOutlined } from '@mui/icons-material';
 import { Box, Link, Stack, Typography } from '@mui/material';
 
 import SectionHeading from '@/components/section-heading';
+import { TOUCH_TARGET_SIZE, touchScreen } from '@/lib/theme';
 import { Contact } from '@/lib/types';
 
 const contactLink = {
@@ -12,6 +13,7 @@ const contactLink = {
   color: 'text.secondary',
   minWidth: 0,
   '&:hover': { color: 'primary.main' },
+  [touchScreen]: { minHeight: TOUCH_TARGET_SIZE },
 };
 
 export default function SubmissionContacts({ contacts }: { contacts: Contact[] }) {

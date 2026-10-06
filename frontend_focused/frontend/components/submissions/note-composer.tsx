@@ -11,6 +11,7 @@ import { parseApiError } from '@/lib/api-errors';
 import { useCurrentUser } from '@/lib/hooks/use-auth';
 import { useIsHydrated } from '@/lib/hooks/use-is-hydrated';
 import { useAddNote } from '@/lib/hooks/use-submissions';
+import { touchScreen } from '@/lib/theme';
 
 const NOTE_MAX_LENGTH = 5000;
 const LENGTH_WARNING_THRESHOLD = NOTE_MAX_LENGTH - 500;
@@ -88,10 +89,10 @@ export default function NoteComposer({ submissionId }: { submissionId: string | 
                 {draft.length.toLocaleString()} / {NOTE_MAX_LENGTH.toLocaleString()} characters
               </Box>
             ) : (
-              <>
+              <Box component="span" sx={{ [touchScreen]: { display: 'none' } }}>
                 <KeyboardKey>{shortcutModifier}</KeyboardKey> <KeyboardKey>Enter</KeyboardKey> to
                 post
-              </>
+              </Box>
             )}
           </Typography>
           <Button variant="contained" disabled={!canPost} onClick={post}>

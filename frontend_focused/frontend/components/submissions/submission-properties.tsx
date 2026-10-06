@@ -20,6 +20,7 @@ import {
   STATUS_OPTIONS,
   statusOption,
 } from '@/lib/submission-display';
+import { touchScreen } from '@/lib/theme';
 import { SubmissionDetail, SubmissionTriageUpdate } from '@/lib/types';
 
 const statusMenuOptions = STATUS_OPTIONS.map((option) => ({
@@ -160,7 +161,7 @@ export default function SubmissionProperties({ submission }: { submission: Submi
             variant="caption"
             color="text.secondary"
             title={submission.broker.primaryContactEmail}
-            sx={{ display: 'block' }}
+            sx={{ display: 'block', [touchScreen]: { py: 1 } }}
             noWrap
           >
             {submission.broker.primaryContactEmail}

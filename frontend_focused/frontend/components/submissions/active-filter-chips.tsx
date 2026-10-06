@@ -105,7 +105,7 @@ export default function ActiveFilterChips({
           size="small"
           variant="outlined"
           onDelete={() => onChange(filter.clear)}
-          sx={{ maxWidth: 320, bgcolor: 'background.paper' }}
+          sx={{ maxWidth: { xs: '100%', sm: 320 }, bgcolor: 'background.paper' }}
         />
       ))}
       <Button size="small" onClick={onClearAll} sx={{ minHeight: 24, color: 'text.secondary' }}>

@@ -176,7 +176,17 @@ export default function SubmissionsWorkspace() {
 
   return (
     <Box>
-      <Box sx={{ px: { xs: 2, md: 3 }, pt: 3, pb: 2, display: 'grid', gap: 2 }}>
+      <Box
+        sx={{
+          px: { xs: 2, md: 3 },
+          pt: 3,
+          pb: 2,
+          display: 'grid',
+          // Without minmax(0, …) a long filter chip widens the column past the screen.
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          gap: 2,
+        }}
+      >
         <PageHeader totalCount={submissions.data?.count} />
         <SubmissionViewTabs
           activeView={activeViewId(search, teamMemberId)}

@@ -4,6 +4,7 @@ import { ChevronLeftOutlined, ChevronRightOutlined } from '@mui/icons-material';
 import { Box, IconButton, MenuItem, Select, Typography } from '@mui/material';
 
 import { PAGE_SIZE_OPTIONS } from '@/lib/submission-search-params';
+import { touchScreen } from '@/lib/theme';
 
 interface SubmissionPaginationProps {
   page: number;
@@ -48,7 +49,7 @@ export default function SubmissionPagination({
           value={pageSize}
           onChange={(event) => onPageSizeChange(Number(event.target.value))}
           slotProps={{ input: { 'aria-labelledby': 'page-size-label' } }}
-          sx={{ fontSize: 13, '& .MuiSelect-select': { py: 0.5 } }}
+          sx={{ fontSize: 13, '& .MuiSelect-select': { py: 0.5, [touchScreen]: { py: 1.25 } } }}
         >
           {PAGE_SIZE_OPTIONS.map((option) => (
             <MenuItem key={option} value={option}>

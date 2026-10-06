@@ -4,6 +4,8 @@ import { CheckOutlined, KeyboardArrowDownOutlined } from '@mui/icons-material';
 import { ButtonBase, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
 import { ReactNode, useState } from 'react';
 
+import { TOUCH_TARGET_SIZE, touchScreen } from '@/lib/theme';
+
 export interface PropertyMenuOption<Value extends string> {
   value: Value;
   label: string;
@@ -47,6 +49,7 @@ export default function PropertyMenu<Value extends string>({
           textAlign: 'left',
           border: 1,
           borderColor: 'transparent',
+          [touchScreen]: { minHeight: TOUCH_TARGET_SIZE },
           '& .property-chevron': { opacity: 0.45, transition: 'opacity 120ms' },
           '&:hover, &.Mui-focusVisible': { bgcolor: 'action.hover', borderColor: 'divider' },
           '&:hover .property-chevron, &.Mui-focusVisible .property-chevron': { opacity: 1 },
