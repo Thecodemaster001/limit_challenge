@@ -17,7 +17,7 @@ class CompanyAdmin(admin.ModelAdmin):
 
 @admin.register(models.TeamMember)
 class TeamMemberAdmin(admin.ModelAdmin):
-    list_display = ("full_name", "email")
+    list_display = ("full_name", "email", "user")
     search_fields = ("full_name", "email")
 
 

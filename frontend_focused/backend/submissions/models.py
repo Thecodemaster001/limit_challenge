@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -28,6 +29,13 @@ class Company(models.Model):
 class TeamMember(models.Model):
     full_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="team_member",
+    )
 
     class Meta:
         ordering = ["full_name"]
@@ -59,6 +67,11 @@ class Submission(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status"], name="submission_status_idx"),
+            models.Index(fields=["priority"], name="submission_priority_idx"),
+            models.Index(fields=["-created_at"], name="submission_created_at_idx"),
+        ]
 
     def __str__(self) -> str:  # pragma: no cover - simple repr
         return f"{self.company} ({self.status})"
@@ -82,7 +95,7 @@ class Document(models.Model):
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="documents")
     title = models.CharField(max_length=255)
     doc_type = models.CharField(max_length=255)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
+    uploaded_at = models.DateTimeField(default=timezone.now)
     file_url = models.URLField(blank=True)
 
     class Meta:
@@ -100,6 +113,11 @@ class Note(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["submission", "-created_at"], name="note_submission_created_at_idx"
+            ),
+        ]
 
     def __str__(self) -> str:  # pragma: no cover - simple repr
         return f"{self.author_name} - {self.created_at:%Y-%m-%d}"
