@@ -53,9 +53,9 @@ Locally the app runs on http://localhost:3000, which Django trusts by default. I
 ### Tests
 
 ```bash
-docker compose exec api pytest     # 64 API tests, run against Postgres
+docker compose exec api pytest     # 68 API tests, run against Postgres
 docker compose exec api ruff check .
-cd frontend && npm test            # 75 unit tests (Vitest)
+cd frontend && npm test            # 79 unit tests (Vitest)
 npm run lint && npm run typecheck && npm run build
 ```
 

@@ -79,6 +79,7 @@ I also ran an end-to-end browser pass (Puppeteer) against the Docker stack at de
 - **What can be edited.** Only triage fields (status, priority, owner) and notes can be changed from the UI. Company, broker and summary come from the broker and stay read-only.
 - **Work in progress.** "In progress" means *New* plus *In review*, since Closed and Lost are finished. "High priority" only shows in-progress submissions, because a closed high-priority deal needs no attention.
 - **Rate limiting.** The Next.js proxy doesn't forward the client's IP address, so sign-in attempts are limited per username instead. A per-IP limit would have locked every user out together.
+- **One business time zone.** "Received" dates, "Yesterday" and the date filters all use US Eastern (`America/New_York`, which handles EST and EDT), not each viewer's browser. Everyone on the team sees the same day for the same submission. Timestamps are stored in UTC, and the zone is one setting (`TIME_ZONE`, mirrored by `BUSINESS_TIME_ZONE` in the frontend).
 - **Rendering.** Data loads in the browser through React Query rather than through server components. The workspace is interactive and authenticated, so server rendering would add complexity for little gain.
 - **Docker.** The compose stack runs the development servers with live reload. A production setup would build the Next.js app, serve Django through gunicorn (already in the image), and turn on secure cookies (`AUTH_COOKIE_SECURE`, which defaults to on when `DEBUG` is off).
 
