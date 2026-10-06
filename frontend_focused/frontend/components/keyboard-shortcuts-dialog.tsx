@@ -26,6 +26,8 @@ const SHORTCUT_GROUPS = [
   {
     title: 'Submission page',
     shortcuts: [
+      { keys: ['j'], description: 'Next submission in the list' },
+      { keys: ['k'], description: 'Previous submission in the list' },
       { keys: ['Esc'], description: 'Back to the list' },
       { keys: ['⌘/Ctrl', 'Enter'], description: 'Post the note you are writing' },
     ],

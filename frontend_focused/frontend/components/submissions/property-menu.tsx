@@ -45,8 +45,10 @@ export default function PropertyMenu<Value extends string>({
           py: 0.5,
           borderRadius: 1.5,
           textAlign: 'left',
-          '& .property-chevron': { opacity: 0, transition: 'opacity 120ms' },
-          '&:hover, &.Mui-focusVisible': { bgcolor: 'action.hover' },
+          border: 1,
+          borderColor: 'transparent',
+          '& .property-chevron': { opacity: 0.45, transition: 'opacity 120ms' },
+          '&:hover, &.Mui-focusVisible': { bgcolor: 'action.hover', borderColor: 'divider' },
           '&:hover .property-chevron, &.Mui-focusVisible .property-chevron': { opacity: 1 },
         }}
       >

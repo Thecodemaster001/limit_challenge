@@ -10,11 +10,16 @@ export function rememberListQuery(queryString: string) {
   }
 }
 
-export function listReturnPath() {
+/** The list's last query string, or an empty string for the default list. */
+export function rememberedListQuery() {
   try {
-    const queryString = window.sessionStorage.getItem(STORAGE_KEY);
-    return queryString ? `${LIST_PATH}?${queryString}` : LIST_PATH;
+    return window.sessionStorage.getItem(STORAGE_KEY) ?? '';
   } catch {
-    return LIST_PATH;
+    return '';
   }
+}
+
+export function listReturnPath() {
+  const queryString = rememberedListQuery();
+  return queryString ? `${LIST_PATH}?${queryString}` : LIST_PATH;
 }

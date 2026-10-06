@@ -1,7 +1,22 @@
 'use client';
 
-import { ChevronRightOutlined, SearchOffOutlined } from '@mui/icons-material';
-import { Box, Button, Divider, Link, Skeleton, Stack, Typography } from '@mui/material';
+import {
+  ChevronRightOutlined,
+  KeyboardArrowDownOutlined,
+  KeyboardArrowUpOutlined,
+  SearchOffOutlined,
+} from '@mui/icons-material';
+import {
+  Box,
+  Button,
+  Divider,
+  IconButton,
+  Link,
+  Skeleton,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { isAxiosError } from 'axios';
 import NextLink from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,9 +28,9 @@ import SubmissionContacts from '@/components/submissions/submission-contacts';
 import SubmissionDocuments from '@/components/submissions/submission-documents';
 import SubmissionNotes from '@/components/submissions/submission-notes';
 import SubmissionProperties from '@/components/submissions/submission-properties';
-import { formatDate } from '@/lib/format';
 import { useIsHydrated } from '@/lib/hooks/use-is-hydrated';
 import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts';
+import { useSubmissionNeighbors } from '@/lib/hooks/use-submission-neighbors';
 import { useSubmissionDetail } from '@/lib/hooks/use-submissions';
 import { listReturnPath } from '@/lib/list-return-path';
 import { SubmissionDetail } from '@/lib/types';
@@ -52,6 +67,50 @@ function Breadcrumb({ current }: { current?: string }) {
   );
 }
 
+const CONTENT_MAX_WIDTH = 1280;
+
+type SubmissionNeighbors = ReturnType<typeof useSubmissionNeighbors>;
+
+/** "3 of 15" with previous/next buttons, following the list the user came from. */
+function QueueNavigator({ neighbors }: { neighbors: SubmissionNeighbors }) {
+  if (neighbors.position === undefined) return null;
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ fontVariantNumeric: 'tabular-nums', mr: 0.5 }}
+      >
+        {neighbors.position} of {neighbors.totalCount}
+      </Typography>
+      <Tooltip title="Previous submission · K">
+        <span>
+          <IconButton
+            aria-label="Previous submission"
+            disabled={!neighbors.hasPrevious}
+            onClick={neighbors.goToPrevious}
+            sx={{ border: 1, borderColor: 'divider' }}
+          >
+            <KeyboardArrowUpOutlined fontSize="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Tooltip title="Next submission · J">
+        <span>
+          <IconButton
+            aria-label="Next submission"
+            disabled={!neighbors.hasNext}
+            onClick={neighbors.goToNext}
+            sx={{ border: 1, borderColor: 'divider' }}
+          >
+            <KeyboardArrowDownOutlined fontSize="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
+    </Box>
+  );
+}
+
 // Responsive border shorthands reset the colour inside their media query, so set it per breakpoint.
 const dividerColor = { xs: 'divider', md: 'divider' };
 
@@ -78,10 +137,13 @@ function DetailLayout({
   return (
     <Box>
       <Box sx={{ px: { xs: 2, md: 3 }, pt: 2, pb: 2.5, borderBottom: 1, borderColor: 'divider' }}>
-        {header}
+        <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto' }}>{header}</Box>
       </Box>
       <Box
         sx={{
+          maxWidth: { md: CONTENT_MAX_WIDTH + 48 },
+          mx: 'auto',
+          px: { md: 3 },
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 320px' },
           gridTemplateRows: { md: 'auto 1fr' },
@@ -105,7 +167,9 @@ function DetailLayout({
         >
           {properties}
         </Box>
-        <Box sx={{ gridArea: 'main', px: { xs: 2, md: 4 }, py: 3, maxWidth: 820 }}>{main}</Box>
+        <Box sx={{ gridArea: 'main', px: { xs: 2, md: 0 }, pr: { md: 4 }, py: 3, maxWidth: 860 }}>
+          {main}
+        </Box>
         <Box
           component="aside"
           aria-label="Contacts and documents"
@@ -125,31 +189,42 @@ function DetailLayout({
   );
 }
 
-function DetailHeader({ submission }: { submission: SubmissionDetail }) {
+function DetailHeader({
+  submission,
+  neighbors,
+}: {
+  submission: SubmissionDetail;
+  neighbors: SubmissionNeighbors;
+}) {
   const { company } = submission;
   return (
     <Stack spacing={1.5}>
-      <Breadcrumb current={company.legalName} />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minHeight: 30 }}>
+        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+          <Breadcrumb current={company.legalName} />
+        </Box>
+        <QueueNavigator neighbors={neighbors} />
+      </Box>
       <Box>
         <Typography variant="h1">{company.legalName}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          {[
-            company.industry,
-            company.headquartersCity,
-            `Received ${formatDate(submission.createdAt)}`,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
+          {[company.industry, company.headquartersCity].filter(Boolean).join(' · ')}
         </Typography>
       </Box>
     </Stack>
   );
 }
 
-function SubmissionDetailContent({ submission }: { submission: SubmissionDetail }) {
+function SubmissionDetailContent({
+  submission,
+  neighbors,
+}: {
+  submission: SubmissionDetail;
+  neighbors: SubmissionNeighbors;
+}) {
   return (
     <DetailLayout
-      header={<DetailHeader submission={submission} />}
+      header={<DetailHeader submission={submission} neighbors={neighbors} />}
       properties={<SubmissionProperties submission={submission} />}
       related={
         <Stack spacing={3} divider={<Divider flexItem />}>
@@ -221,10 +296,15 @@ function SubmissionDetailSkeleton() {
 
 export default function SubmissionDetailView({ submissionId }: { submissionId: string }) {
   const detail = useSubmissionDetail(submissionId);
+  const neighbors = useSubmissionNeighbors(Number(submissionId));
   const returnPath = useListReturnPath();
   const router = useRouter();
 
-  useKeyboardShortcuts({ Escape: () => router.push(returnPath) });
+  useKeyboardShortcuts({
+    Escape: () => router.push(returnPath),
+    j: neighbors.goToNext,
+    k: neighbors.goToPrevious,
+  });
 
   if (detail.isPending) return <SubmissionDetailSkeleton />;
 
@@ -255,5 +335,5 @@ export default function SubmissionDetailView({ submissionId }: { submissionId: s
     );
   }
 
-  return <SubmissionDetailContent submission={detail.data} />;
+  return <SubmissionDetailContent submission={detail.data} neighbors={neighbors} />;
 }

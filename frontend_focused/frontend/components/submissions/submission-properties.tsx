@@ -142,7 +142,16 @@ export default function SubmissionProperties({ submission }: { submission: Submi
         </PropertyMenu>
       </Property>
       <Property label="Broker">
-        <Typography variant="body2" noWrap title={submission.broker.name}>
+        <Typography
+          variant="body2"
+          title={submission.broker.name}
+          sx={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
           {submission.broker.name}
         </Typography>
         {submission.broker.primaryContactEmail && (
@@ -150,6 +159,7 @@ export default function SubmissionProperties({ submission }: { submission: Submi
             href={`mailto:${submission.broker.primaryContactEmail}`}
             variant="caption"
             color="text.secondary"
+            title={submission.broker.primaryContactEmail}
             sx={{ display: 'block' }}
             noWrap
           >
