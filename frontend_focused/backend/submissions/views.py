@@ -2,7 +2,7 @@ from django.db.models import Count, IntegerField, OuterRef, Prefetch, Subquery
 from django.db.models.functions import Coalesce
 from django_filters.utils import translate_validation
 from drf_spectacular.utils import extend_schema
-from rest_framework import mixins, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -29,6 +29,13 @@ def latest_note_field(field_name):
     return Subquery(latest_notes.values(field_name)[:1])
 
 
+def author_name_for(user):
+    team_member = getattr(user, "team_member", None)
+    if team_member:
+        return team_member.full_name
+    return user.get_full_name() or user.get_username()
+
+
 class SubmissionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = models.Submission.objects.select_related("company", "broker", "owner").order_by(
         "-created_at", "-id"
@@ -45,16 +52,42 @@ class SubmissionViewSet(viewsets.ReadOnlyModelViewSet):
                 latest_note_body=latest_note_field("body"),
                 latest_note_created_at=latest_note_field("created_at"),
             )
-        return queryset.prefetch_related(
-            "contacts",
-            "documents",
-            Prefetch("notes", queryset=models.Note.objects.order_by("-created_at", "-pk")),
-        )
+        if self.action in ("retrieve", "partial_update"):
+            return queryset.prefetch_related(
+                "contacts",
+                "documents",
+                Prefetch("notes", queryset=models.Note.objects.order_by("-created_at", "-pk")),
+            )
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "list":
             return serializers.SubmissionListSerializer
         return serializers.SubmissionDetailSerializer
+
+    @extend_schema(
+        request=serializers.SubmissionTriageSerializer,
+        responses=serializers.SubmissionDetailSerializer,
+    )
+    def partial_update(self, request, *args, **kwargs):
+        triage = serializers.SubmissionTriageSerializer(
+            self.get_object(), data=request.data, partial=True
+        )
+        triage.is_valid(raise_exception=True)
+        triage.save()
+        return Response(serializers.SubmissionDetailSerializer(self.get_object()).data)
+
+    @extend_schema(
+        request=serializers.NoteCreateSerializer,
+        responses={201: serializers.NoteSerializer},
+    )
+    @action(detail=True, methods=["post"])
+    def notes(self, request, pk=None):
+        submission = self.get_object()
+        note_input = serializers.NoteCreateSerializer(data=request.data)
+        note_input.is_valid(raise_exception=True)
+        note = note_input.save(submission=submission, author_name=author_name_for(request.user))
+        return Response(serializers.NoteSerializer(note).data, status=status.HTTP_201_CREATED)
 
     @extend_schema(filters=True, responses=serializers.StatusCountSerializer(many=True))
     @action(detail=False, url_path="status-counts", pagination_class=None)

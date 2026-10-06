@@ -5,6 +5,7 @@ from rest_framework import serializers
 from submissions import models
 
 NOTE_PREVIEW_LENGTH = 140
+NOTE_MAX_LENGTH = 5000
 
 
 class BrokerSerializer(serializers.ModelSerializer):
@@ -41,6 +42,26 @@ class NoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Note
         fields = ["id", "author_name", "body", "created_at"]
+
+
+class NoteCreateSerializer(serializers.ModelSerializer):
+    body = serializers.CharField(max_length=NOTE_MAX_LENGTH)
+
+    class Meta:
+        model = models.Note
+        fields = ["body"]
+
+
+class SubmissionTriageSerializer(serializers.ModelSerializer):
+    """The only submission fields an underwriter can change from the workspace."""
+
+    owner_id = serializers.PrimaryKeyRelatedField(
+        source="owner", queryset=models.TeamMember.objects.all()
+    )
+
+    class Meta:
+        model = models.Submission
+        fields = ["status", "priority", "owner_id"]
 
 
 class StatusCountSerializer(serializers.Serializer):
