@@ -1,10 +1,10 @@
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 
 from accounts.authentication import ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE
+from accounts.throttling import LoginRateThrottle
 from conftest import USER_PASSWORD
 from submissions.tests.factories import TeamMemberFactory
 
@@ -149,8 +149,20 @@ def test_current_user_without_a_team_member(api_client, user):
 
 
 def test_login_is_rate_limited(browser_client, user, monkeypatch):
-    monkeypatch.setattr(ScopedRateThrottle, "THROTTLE_RATES", {"authentication": "2/minute"})
+    monkeypatch.setattr(LoginRateThrottle, "THROTTLE_RATES", {"login": "2/minute"})
 
     statuses = [log_in(browser_client, user.username, "wrong").status_code for _ in range(3)]
 
     assert statuses == [401, 401, 429]
+
+
+def test_rate_limit_applies_per_username(browser_client, user, django_user_model, monkeypatch):
+    monkeypatch.setattr(LoginRateThrottle, "THROTTLE_RATES", {"login": "2/minute"})
+    other_user = django_user_model.objects.create_user(
+        username="broker-desk", password=USER_PASSWORD
+    )
+    for _ in range(2):
+        log_in(browser_client, user.username, "wrong")
+
+    assert log_in(browser_client, user.username).status_code == 429
+    assert log_in(browser_client, other_user.username).status_code == 200

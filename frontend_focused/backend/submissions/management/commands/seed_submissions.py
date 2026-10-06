@@ -139,6 +139,12 @@ def weighted_choice(random_generator, weights):
     return random_generator.choices(list(weights), weights=list(weights.values()))[0]
 
 
+def plain_name(fake, unique=False):
+    """A first and last name without Faker's titles and suffixes ("Dr.", "Jr.", "MD")."""
+    source = fake.unique if unique else fake
+    return f"{source.first_name()} {fake.last_name()}"
+
+
 def email_from_name(full_name, domain):
     return f"{slugify(full_name).replace('-', '.')}@{domain}"
 
@@ -195,7 +201,7 @@ class Command(BaseCommand):
 
         owners = []
         for _ in range(6):
-            full_name = fake.unique.name()
+            full_name = plain_name(fake, unique=True)
             owners.append(
                 models.TeamMember.objects.create(
                     full_name=full_name,
@@ -223,7 +229,7 @@ class Command(BaseCommand):
         for index, submission in enumerate(submissions):
             company_domain = f"{slugify(submission.company.legal_name)}.example.com"
             for _ in range(random_generator.randint(1, 3)):
-                name = fake.name()
+                name = plain_name(fake)
                 contacts.append(
                     models.Contact(
                         submission=submission,

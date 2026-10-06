@@ -9,7 +9,6 @@ from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
@@ -22,6 +21,7 @@ from accounts.authentication import (
     set_auth_cookies,
 )
 from accounts.serializers import CurrentUserSerializer, LoginSerializer
+from accounts.throttling import LoginRateThrottle
 
 
 class CookieTokenView(APIView):
@@ -46,8 +46,7 @@ class CsrfTokenView(CookieTokenView):
 
 
 class LoginView(CookieTokenView):
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "authentication"
+    throttle_classes = [LoginRateThrottle]
 
     @extend_schema(request=LoginSerializer, responses=CurrentUserSerializer)
     def post(self, request):
@@ -65,9 +64,6 @@ class LoginView(CookieTokenView):
 
 
 class RefreshView(CookieTokenView):
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "authentication"
-
     @extend_schema(request=None, responses={204: None})
     def post(self, request):
         session_expired = InvalidToken("Session expired. Please sign in again.")

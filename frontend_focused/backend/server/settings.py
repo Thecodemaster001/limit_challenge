@@ -35,6 +35,8 @@ ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
 CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 
+USE_X_FORWARDED_HOST = env.bool("USE_X_FORWARDED_HOST", default=False)
+
 AUTH_COOKIE_SECURE = env.bool("AUTH_COOKIE_SECURE", default=not DEBUG)
 CSRF_COOKIE_SECURE = AUTH_COOKIE_SECURE
 
@@ -154,7 +156,7 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_THROTTLE_RATES": {
-        "authentication": env("AUTHENTICATION_THROTTLE_RATE", default="20/minute"),
+        "login": env("LOGIN_THROTTLE_RATE", default="10/minute"),
     },
 }
 

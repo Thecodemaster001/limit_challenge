@@ -21,6 +21,7 @@ services:
       DATABASE_URL: postgres://submissions:submissions@db:5432/submissions
       ALLOWED_HOSTS: localhost,127.0.0.1,api
       CSRF_TRUSTED_ORIGINS: http://localhost:3001
+      USE_X_FORWARDED_HOST: "True"
       SEED_DATA: "true"
     ports:
       - "8001:8001"
