@@ -16,6 +16,7 @@ import SubmissionTable, {
 } from '@/components/submissions/submission-table';
 import { useCurrentUser } from '@/lib/hooks/use-auth';
 import { useBrokerOptions } from '@/lib/hooks/use-broker-options';
+import { useIsHydrated } from '@/lib/hooks/use-is-hydrated';
 import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts';
 import { useStatusCounts } from '@/lib/hooks/use-status-counts';
 import { useSubmissionSearch } from '@/lib/hooks/use-submission-search';
@@ -81,7 +82,9 @@ export default function SubmissionsWorkspace() {
   });
   const brokers = useBrokerOptions().data ?? [];
   const teamMembers = useTeamMembers().data ?? [];
-  const teamMemberId = useCurrentUser().data?.teamMember?.id;
+  const currentUser = useCurrentUser().data;
+  // The user can be cached before this boundary hydrates; wait so the tabs match the server.
+  const teamMemberId = useIsHydrated() ? currentUser?.teamMember?.id : undefined;
   const hasFilters = countActiveFilters(search) > 0;
   const [statusMenuCounts] = useStatusCounts([countsQuery(search, { status: [] })], {
     enabled: !invalidDateRange,

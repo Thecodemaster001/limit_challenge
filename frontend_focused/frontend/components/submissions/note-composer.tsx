@@ -2,29 +2,23 @@
 
 import { Box, Button, InputBase, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { KeyboardEvent, useState, useSyncExternalStore } from 'react';
+import { KeyboardEvent, useState } from 'react';
 
 import { useNotify } from '@/components/notifications';
 import KeyboardKey from '@/components/keyboard-key';
 import PersonAvatar from '@/components/person-avatar';
 import { parseApiError } from '@/lib/api-errors';
 import { useCurrentUser } from '@/lib/hooks/use-auth';
+import { useIsHydrated } from '@/lib/hooks/use-is-hydrated';
 import { useAddNote } from '@/lib/hooks/use-submissions';
 
 const NOTE_MAX_LENGTH = 5000;
 const LENGTH_WARNING_THRESHOLD = NOTE_MAX_LENGTH - 500;
 
-function subscribeToNothing() {
-  return () => {};
-}
-
 /** "⌘" on Apple devices, "Ctrl" elsewhere; resolved after hydration to avoid a mismatch. */
 function useShortcutModifier() {
-  return useSyncExternalStore(
-    subscribeToNothing,
-    () => (/Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl'),
-    () => 'Ctrl',
-  );
+  const isHydrated = useIsHydrated();
+  return isHydrated && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl';
 }
 
 export default function NoteComposer({ submissionId }: { submissionId: string | number }) {

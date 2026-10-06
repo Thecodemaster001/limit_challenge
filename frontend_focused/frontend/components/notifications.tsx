@@ -55,6 +55,7 @@ export function NotificationProvider({ children }: PropsWithChildren) {
         autoHideDuration={notification ? AUTO_HIDE_MS[notification.severity] : null}
         onClose={close}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        sx={{ left: { md: 256 } }}
       >
         <Box
           role={notification?.severity === 'error' ? 'alert' : 'status'}

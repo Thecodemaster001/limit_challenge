@@ -5,7 +5,6 @@ import { Box, Button, Divider, Link, Skeleton, Stack, Typography } from '@mui/ma
 import { isAxiosError } from 'axios';
 import NextLink from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSyncExternalStore } from 'react';
 
 import { EmptyState, ErrorState } from '@/components/page-states';
 import SectionHeading from '@/components/section-heading';
@@ -15,6 +14,7 @@ import SubmissionDocuments from '@/components/submissions/submission-documents';
 import SubmissionNotes from '@/components/submissions/submission-notes';
 import SubmissionProperties from '@/components/submissions/submission-properties';
 import { formatDate } from '@/lib/format';
+import { useIsHydrated } from '@/lib/hooks/use-is-hydrated';
 import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts';
 import { useSubmissionDetail } from '@/lib/hooks/use-submissions';
 import { listReturnPath } from '@/lib/list-return-path';
@@ -22,13 +22,9 @@ import { SubmissionDetail } from '@/lib/types';
 
 const LIST_PATH = '/submissions';
 
-function subscribeToNothing() {
-  return () => {};
-}
-
 /** The list URL with the filters the user last had, read after hydration to avoid a mismatch. */
 function useListReturnPath() {
-  return useSyncExternalStore(subscribeToNothing, listReturnPath, () => LIST_PATH);
+  return useIsHydrated() ? listReturnPath() : LIST_PATH;
 }
 
 function Breadcrumb({ current }: { current?: string }) {
@@ -56,14 +52,28 @@ function Breadcrumb({ current }: { current?: string }) {
   );
 }
 
+// Responsive border shorthands reset the colour inside their media query, so set it per breakpoint.
+const dividerColor = { xs: 'divider', md: 'divider' };
+
+const sidePanelColumn = {
+  px: { xs: 2, md: 3 },
+  borderLeft: { md: 1 },
+};
+
+/**
+ * Two columns on desktop: the conversation on the left, facts on the right. On phones the
+ * key properties come first, then summary and notes, then contacts and documents.
+ */
 function DetailLayout({
   header,
+  properties,
   main,
-  aside,
+  related,
 }: {
   header: React.ReactNode;
+  properties: React.ReactNode;
   main: React.ReactNode;
-  aside: React.ReactNode;
+  related: React.ReactNode;
 }) {
   return (
     <Box>
@@ -74,23 +84,41 @@ function DetailLayout({
         sx={{
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 320px' },
+          gridTemplateRows: { md: 'auto 1fr' },
+          gridTemplateAreas: {
+            xs: '"properties" "main" "related"',
+            md: '"main properties" "main related"',
+          },
         }}
       >
         <Box
           component="aside"
+          aria-label="Properties"
           sx={{
-            order: { xs: 0, md: 1 },
-            px: { xs: 2, md: 3 },
-            py: 3,
-            borderLeft: { md: 1 },
+            ...sidePanelColumn,
+            gridArea: 'properties',
+            pt: 3,
+            pb: { xs: 3, md: 0 },
             borderBottom: { xs: 1, md: 0 },
-            borderColor: { xs: 'divider', md: 'divider' },
+            borderColor: dividerColor,
           }}
         >
-          {aside}
+          {properties}
         </Box>
-        <Box sx={{ order: { xs: 1, md: 0 }, px: { xs: 2, md: 4 }, py: 3, maxWidth: 820 }}>
-          {main}
+        <Box sx={{ gridArea: 'main', px: { xs: 2, md: 4 }, py: 3, maxWidth: 820 }}>{main}</Box>
+        <Box
+          component="aside"
+          aria-label="Contacts and documents"
+          sx={{
+            ...sidePanelColumn,
+            gridArea: 'related',
+            pb: 3,
+            borderTop: { xs: 1, md: 0 },
+            borderColor: dividerColor,
+          }}
+        >
+          <Divider sx={{ display: { xs: 'none', md: 'block' }, my: 3 }} />
+          <Box sx={{ pt: { xs: 3, md: 0 } }}>{related}</Box>
         </Box>
       </Box>
     </Box>
@@ -122,9 +150,9 @@ function SubmissionDetailContent({ submission }: { submission: SubmissionDetail 
   return (
     <DetailLayout
       header={<DetailHeader submission={submission} />}
-      aside={
+      properties={<SubmissionProperties submission={submission} />}
+      related={
         <Stack spacing={3} divider={<Divider flexItem />}>
-          <SubmissionProperties submission={submission} />
           <SubmissionContacts contacts={submission.contacts} />
           <SubmissionDocuments documents={submission.documents} />
         </Stack>
@@ -162,11 +190,18 @@ function SubmissionDetailSkeleton() {
             </Box>
           </Stack>
         }
-        aside={
+        properties={
           <Stack spacing={1.5}>
             {Array.from({ length: 6 }, (_, index) => (
               <Skeleton key={index} height={22} />
             ))}
+          </Stack>
+        }
+        related={
+          <Stack spacing={1.5}>
+            <Skeleton width={90} height={24} />
+            <Skeleton height={40} />
+            <Skeleton height={40} />
           </Stack>
         }
         main={

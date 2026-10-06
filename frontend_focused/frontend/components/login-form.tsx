@@ -28,8 +28,6 @@ interface FieldErrors {
   password?: string;
 }
 
-const showDemoAccount = process.env.NODE_ENV === 'development';
-
 export default function LoginForm({ redirectTo }: LoginFormProps) {
   const router = useRouter();
   const login = useLogin();
@@ -136,11 +134,6 @@ export default function LoginForm({ redirectTo }: LoginFormProps) {
             </Button>
           </Stack>
         </Paper>
-        {showDemoAccount && (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-            Demo account: <strong>demo</strong> / <strong>demo-password</strong>
-          </Typography>
-        )}
       </Box>
     </Box>
   );
