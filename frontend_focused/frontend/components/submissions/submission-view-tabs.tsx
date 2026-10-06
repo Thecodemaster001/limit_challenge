@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Tab, Tabs } from '@mui/material';
+import { Box, Tab, Tabs, Tooltip } from '@mui/material';
 
 import { SubmissionListQuery } from '@/lib/submission-search-params';
 import { availableViews, countForView, SubmissionViewId } from '@/lib/submission-views';
@@ -62,20 +62,23 @@ export default function SubmissionViewTabs({
             key={view.id}
             value={view.id}
             label={
-              <Box component="span" sx={{ display: 'inline-flex', gap: 0.75 }}>
-                {view.label}
-                <Box
-                  component="span"
-                  sx={{
-                    color: 'text.secondary',
-                    fontWeight: 400,
-                    fontVariantNumeric: 'tabular-nums',
-                    minWidth: 12,
-                  }}
-                >
-                  {statusCounts ? countForView(view, statusCounts) : ''}
+              // describeChild keeps "In progress 15" as the tab's name; the rule is extra detail.
+              <Tooltip title={view.description} describeChild>
+                <Box component="span" sx={{ display: 'inline-flex', gap: 0.75 }}>
+                  {view.label}
+                  <Box
+                    component="span"
+                    sx={{
+                      color: 'text.secondary',
+                      fontWeight: 400,
+                      fontVariantNumeric: 'tabular-nums',
+                      minWidth: 12,
+                    }}
+                  >
+                    {statusCounts ? countForView(view, statusCounts) : ''}
+                  </Box>
                 </Box>
-              </Box>
+              </Tooltip>
             }
           />
         );

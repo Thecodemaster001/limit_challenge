@@ -64,17 +64,19 @@ I also ran an end-to-end browser pass (Puppeteer) against the Docker stack at de
 ## Extras beyond the brief
 
 - JWT authentication in httpOnly cookies, with a login page and route protection
-- Saved views (All, My submissions, Open, High priority), each with a live count
+- Saved views (All, My submissions, In progress, High priority), each with a live count and a hover hint that explains its rule
 - Sortable columns, plus a sort menu on phones
 - Adding notes and changing status, priority or owner, with optimistic updates and undo
+- Next/previous on the detail page ("3 of 15", or `j`/`k`), following the list's filters, sort and page across page boundaries, so you can work through a queue without going back to the list
 - Keyboard shortcuts: `j`/`k`, `Enter`, `/`, `Esc` and `⌘/Ctrl Enter`. Press `?` for the full list.
 - OpenAPI docs, a Docker setup with Postgres, and realistic, repeatable seed data
 
 ## Assumptions and tradeoffs
 
+- **Where submissions come from.** Brokers send submissions and this workspace is where the team reviews them, so the app has no "New submission" form. The brief asks only for read endpoints, and the data comes from `seed_submissions`. Staff can still enter one by hand in the Django admin (Submissions → Add, with contacts, documents and notes on the same page). An in-app intake form would be the natural next step.
 - **Owner assignment.** Submissions are assigned to `TeamMember` records. A login is linked to a team member through an optional one-to-one relationship, so the workspace can know who "me" is.
 - **What can be edited.** Only triage fields (status, priority, owner) and notes can be changed from the UI. Company, broker and summary come from the broker and stay read-only.
-- **Open work.** "Open" means *new* plus *in review*. "High priority" only shows open submissions, because a closed high-priority deal needs no attention.
+- **Work in progress.** "In progress" means *New* plus *In review*, since Closed and Lost are finished. "High priority" only shows in-progress submissions, because a closed high-priority deal needs no attention.
 - **Rate limiting.** The Next.js proxy doesn't forward the client's IP address, so sign-in attempts are limited per username instead. A per-IP limit would have locked every user out together.
 - **Rendering.** Data loads in the browser through React Query rather than through server components. The workspace is interactive and authenticated, so server rendering would add complexity for little gain.
 - **Docker.** The compose stack runs the development servers with live reload. A production setup would build the Next.js app, serve Django through gunicorn (already in the image), and turn on secure cookies (`AUTH_COOKIE_SECURE`, which defaults to on when `DEBUG` is off).

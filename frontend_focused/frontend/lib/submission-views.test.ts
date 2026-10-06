@@ -28,7 +28,7 @@ describe('activeViewId', () => {
   it('recognises each preset, ignoring unrelated filters', () => {
     expect(activeViewId({ ...baseSearch, brokerId: 4, companySearch: 'acme' })).toBe('all');
     expect(activeViewId({ ...baseSearch, ownerId: 7 }, 7)).toBe('mine');
-    expect(activeViewId({ ...baseSearch, status: ['in_review', 'new'] })).toBe('open');
+    expect(activeViewId({ ...baseSearch, status: ['in_review', 'new'] })).toBe('in-progress');
     expect(activeViewId({ ...baseSearch, status: ['new', 'in_review'], priority: ['high'] })).toBe(
       'high-priority',
     );
@@ -59,8 +59,12 @@ describe('countForView', () => {
     expect(countForView(view('all'), statusCounts)).toBe(15);
   });
 
-  it('only adds open statuses for open views', () => {
-    expect(countForView(view('open'), statusCounts)).toBe(10);
+  it('only adds New and In review for the in-progress view', () => {
+    expect(countForView(view('in-progress'), statusCounts)).toBe(10);
+  });
+
+  it('describes every view for its hover hint', () => {
+    expect(SUBMISSION_VIEWS.every((candidate) => candidate.description.length > 0)).toBe(true);
   });
 });
 

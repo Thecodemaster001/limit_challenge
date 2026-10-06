@@ -1,13 +1,16 @@
 import { SortField, SubmissionSearch } from '@/lib/submission-search-params';
 import { StatusCount, SubmissionPriority, SubmissionStatus } from '@/lib/types';
 
-export type SubmissionViewId = 'all' | 'mine' | 'open' | 'high-priority';
+export type SubmissionViewId = 'all' | 'mine' | 'in-progress' | 'high-priority';
 
-const OPEN_STATUSES: SubmissionStatus[] = ['new', 'in_review'];
+/** Submissions still being worked on; Closed and Lost are finished. */
+const IN_PROGRESS_STATUSES: SubmissionStatus[] = ['new', 'in_review'];
 
 export interface SubmissionView {
   id: SubmissionViewId;
   label: string;
+  /** Shown on hover, so the view's rule is never a guess. */
+  description: string;
   /** The `status`, `priority` and `ownerId` this view sets; other filters are left alone. */
   preset: (teamMemberId?: number) => Pick<SubmissionSearch, 'status' | 'priority' | 'ownerId'>;
   /** Which statuses this view counts, given counts that already reflect its other presets. */
@@ -16,28 +19,36 @@ export interface SubmissionView {
 }
 
 export const SUBMISSION_VIEWS: SubmissionView[] = [
-  { id: 'all', label: 'All', preset: () => ({ status: [], priority: [], ownerId: undefined }) },
+  {
+    id: 'all',
+    label: 'All',
+    description: 'Every submission matching your other filters',
+    preset: () => ({ status: [], priority: [], ownerId: undefined }),
+  },
   {
     id: 'mine',
     label: 'My submissions',
+    description: 'Submissions you own',
     preset: (teamMemberId) => ({ status: [], priority: [], ownerId: teamMemberId }),
     requiresTeamMember: true,
   },
   {
-    id: 'open',
-    label: 'Open',
-    preset: () => ({ status: OPEN_STATUSES, priority: [], ownerId: undefined }),
-    countedStatuses: OPEN_STATUSES,
+    id: 'in-progress',
+    label: 'In progress',
+    description: 'New and In review: still being worked on',
+    preset: () => ({ status: IN_PROGRESS_STATUSES, priority: [], ownerId: undefined }),
+    countedStatuses: IN_PROGRESS_STATUSES,
   },
   {
     id: 'high-priority',
     label: 'High priority',
+    description: 'High priority and still in progress',
     preset: () => ({
-      status: OPEN_STATUSES,
+      status: IN_PROGRESS_STATUSES,
       priority: ['high'] as SubmissionPriority[],
       ownerId: undefined,
     }),
-    countedStatuses: OPEN_STATUSES,
+    countedStatuses: IN_PROGRESS_STATUSES,
   },
 ];
 
