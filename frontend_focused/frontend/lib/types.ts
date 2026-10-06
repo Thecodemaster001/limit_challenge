@@ -91,3 +91,8 @@ export interface LoginCredentials {
   username: string;
   password: string;
 }
+
+export interface StatusCount {
+  status: SubmissionStatus;
+  count: number;
+}

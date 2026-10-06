@@ -10,6 +10,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -22,6 +23,8 @@ import PriorityIndicator from '@/components/submissions/priority-indicator';
 import StatusIndicator from '@/components/submissions/status-indicator';
 import { pluralize } from '@/lib/format';
 import { submissionDetailQueryOptions } from '@/lib/hooks/use-submissions';
+import { SortField } from '@/lib/submission-search-params';
+import { DEFAULT_ORDERING, nextOrdering, sortState } from '@/lib/submission-views';
 import { SubmissionListItem } from '@/lib/types';
 
 const wideScreenOnly = { display: { xs: 'none', lg: 'table-cell' } };
@@ -110,27 +113,62 @@ function LatestNote({ submission }: { submission: SubmissionListItem }) {
 
 interface SubmissionTableProps {
   submissions: SubmissionListItem[];
+  ordering?: string;
+  onOrderingChange: (ordering: string | undefined) => void;
 }
 
-export default function SubmissionTable({ submissions }: SubmissionTableProps) {
+export default function SubmissionTable({
+  submissions,
+  ordering,
+  onOrderingChange,
+}: SubmissionTableProps) {
   const queryClient = useQueryClient();
   const prefetchDetail = (submission: SubmissionListItem) =>
     queryClient.prefetchQuery(submissionDetailQueryOptions(submission.id));
+
+  function sortableHeader(field: SortField, label: string) {
+    const direction = sortState(ordering, field);
+    return (
+      <TableSortLabel
+        active={Boolean(direction)}
+        direction={direction ?? 'asc'}
+        onClick={() => {
+          const next = nextOrdering(ordering, field);
+          onOrderingChange(next === DEFAULT_ORDERING ? undefined : next);
+        }}
+      >
+        {label}
+      </TableSortLabel>
+    );
+  }
 
   return (
     <>
       <Table size="small" sx={{ display: { xs: 'none', md: 'table' }, tableLayout: 'fixed' }}>
         <TableHead>
           <TableRow>
-            <TableCell sx={{ pl: 3, width: { md: '28%', xl: '22%' } }}>Company</TableCell>
-            <TableCell sx={{ width: 112 }}>Status</TableCell>
-            <TableCell sx={{ width: 104 }}>Priority</TableCell>
+            <TableCell
+              sx={{ pl: 3, width: { md: '28%', xl: '22%' } }}
+              sortDirection={sortState(ordering, 'company') ?? false}
+            >
+              {sortableHeader('company', 'Company')}
+            </TableCell>
+            <TableCell sx={{ width: 112 }} sortDirection={sortState(ordering, 'status') ?? false}>
+              {sortableHeader('status', 'Status')}
+            </TableCell>
+            <TableCell sx={{ width: 104 }} sortDirection={sortState(ordering, 'priority') ?? false}>
+              {sortableHeader('priority', 'Priority')}
+            </TableCell>
             <TableCell sx={{ ...wideScreenOnly, width: '17%' }}>Broker</TableCell>
             <TableCell sx={{ width: '16%' }}>Owner</TableCell>
             <TableCell sx={extraWideScreenOnly}>Latest note</TableCell>
             <TableCell sx={{ width: 96 }}>Activity</TableCell>
-            <TableCell align="right" sx={{ pr: 3, width: 104 }}>
-              Received
+            <TableCell
+              align="right"
+              sx={{ pr: 3, width: 112 }}
+              sortDirection={sortState(ordering, 'createdAt') ?? false}
+            >
+              {sortableHeader('createdAt', 'Received')}
             </TableCell>
           </TableRow>
         </TableHead>

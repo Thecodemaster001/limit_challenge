@@ -8,18 +8,35 @@ import { EmptyState, ErrorState } from '@/components/page-states';
 import ActiveFilterChips from '@/components/submissions/active-filter-chips';
 import SubmissionFilterBar from '@/components/submissions/submission-filter-bar';
 import SubmissionPagination from '@/components/submissions/submission-pagination';
+import SubmissionViewTabs from '@/components/submissions/submission-view-tabs';
 import SubmissionTable, {
   SubmissionTableSkeleton,
 } from '@/components/submissions/submission-table';
+import { useCurrentUser } from '@/lib/hooks/use-auth';
 import { useBrokerOptions } from '@/lib/hooks/use-broker-options';
+import { useStatusCounts } from '@/lib/hooks/use-status-counts';
 import { useSubmissionSearch } from '@/lib/hooks/use-submission-search';
 import { useSubmissionsList } from '@/lib/hooks/use-submissions';
 import { useTeamMembers } from '@/lib/hooks/use-team-members';
 import {
   countActiveFilters,
+  DEFAULT_PAGE_SIZE,
   hasInvalidDateRange,
+  SubmissionSearch,
   toSubmissionListQuery,
 } from '@/lib/submission-search-params';
+import { activeViewId, SUBMISSION_VIEWS, SubmissionViewId } from '@/lib/submission-views';
+
+/** The API query for counts: filters only, without sorting or paging. */
+function countsQuery(search: SubmissionSearch, changes: Partial<SubmissionSearch> = {}) {
+  return toSubmissionListQuery({
+    ...search,
+    ...changes,
+    ordering: undefined,
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
+}
 
 function PageHeader({ totalCount }: { totalCount?: number }) {
   return (
@@ -49,7 +66,16 @@ export default function SubmissionsWorkspace() {
   });
   const brokers = useBrokerOptions().data ?? [];
   const teamMembers = useTeamMembers().data ?? [];
+  const teamMemberId = useCurrentUser().data?.teamMember?.id;
   const hasFilters = countActiveFilters(search) > 0;
+  const [statusMenuCounts] = useStatusCounts([countsQuery(search, { status: [] })], {
+    enabled: !invalidDateRange,
+  });
+
+  function selectView(viewId: SubmissionViewId) {
+    const view = SUBMISSION_VIEWS.find((candidate) => candidate.id === viewId);
+    if (view) updateSearch(view.preset(teamMemberId));
+  }
 
   function renderResults() {
     if (invalidDateRange) {
@@ -108,7 +134,11 @@ export default function SubmissionsWorkspace() {
     }
     return (
       <>
-        <SubmissionTable submissions={submissions.data.results} />
+        <SubmissionTable
+          submissions={submissions.data.results}
+          ordering={search.ordering}
+          onOrderingChange={(ordering) => updateSearch({ ordering })}
+        />
         <SubmissionPagination
           page={search.page}
           pageSize={search.pageSize}
@@ -124,10 +154,18 @@ export default function SubmissionsWorkspace() {
     <Box>
       <Box sx={{ px: { xs: 2, md: 3 }, pt: 3, pb: 2, display: 'grid', gap: 2 }}>
         <PageHeader totalCount={submissions.data?.count} />
+        <SubmissionViewTabs
+          activeView={activeViewId(search, teamMemberId)}
+          baseQuery={countsQuery(search, { status: [], priority: [], ownerId: undefined })}
+          teamMemberId={teamMemberId}
+          enabled={!invalidDateRange}
+          onSelect={selectView}
+        />
         <SubmissionFilterBar
           search={search}
           brokers={brokers}
           teamMembers={teamMembers}
+          statusCounts={statusMenuCounts?.data}
           onChange={updateSearch}
         />
         <ActiveFilterChips

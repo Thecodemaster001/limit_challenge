@@ -19,6 +19,7 @@ export interface FilterMenuOption {
   value: string;
   label: string;
   icon?: ReactNode;
+  count?: number;
 }
 
 interface FilterMenuProps {
@@ -139,6 +140,15 @@ export default function FilterMenu({
                 primary={option.label}
                 slotProps={{ primary: { noWrap: true, fontSize: 13 } }}
               />
+              {option.count !== undefined && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontVariantNumeric: 'tabular-nums', ml: 1 }}
+                >
+                  {option.count}
+                </Typography>
+              )}
               {!multiple && isSelected && <CheckOutlined sx={{ fontSize: 16 }} />}
             </MenuItem>
           );
