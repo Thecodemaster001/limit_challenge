@@ -13,7 +13,7 @@ import {
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import { useSubmissionDetail } from '@/lib/hooks/useSubmissions';
+import { useSubmissionDetail } from '@/lib/hooks/use-submissions';
 
 export default function SubmissionDetailPage() {
   const params = useParams<{ id: string }>();
@@ -49,7 +49,7 @@ export default function SubmissionDetailPage() {
             </Typography>
             <Divider sx={{ my: 2 }} />
             <pre style={{ margin: 0, fontSize: 14 }}>
-              {JSON.stringify({ submissionId, queryKey: detailQuery.queryKey }, null, 2)}
+              {JSON.stringify({ submissionId, status: detailQuery.status }, null, 2)}
             </pre>
           </CardContent>
         </Card>

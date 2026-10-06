@@ -1,7 +1,20 @@
+import path from 'node:path';
 import type { NextConfig } from 'next';
 
+const apiInternalUrl = process.env.API_INTERNAL_URL ?? 'http://localhost:8000';
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Pin the workspace root so a stray lockfile in a parent directory is never picked up.
+  turbopack: { root: path.resolve(__dirname) },
+  skipTrailingSlashRedirect: true,
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*/',
+        destination: `${apiInternalUrl}/api/:path*/`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

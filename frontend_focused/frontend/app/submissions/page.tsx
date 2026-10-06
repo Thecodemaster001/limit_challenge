@@ -13,8 +13,8 @@ import {
 } from '@mui/material';
 import { useMemo, useState } from 'react';
 
-import { useBrokerOptions } from '@/lib/hooks/useBrokerOptions';
-import { useSubmissionsList } from '@/lib/hooks/useSubmissions';
+import { useBrokerOptions } from '@/lib/hooks/use-broker-options';
+import { useSubmissionsList } from '@/lib/hooks/use-submissions';
 import { SubmissionStatus } from '@/lib/types';
 
 const STATUS_OPTIONS: { label: string; value: SubmissionStatus | '' }[] = [
@@ -108,7 +108,7 @@ export default function SubmissionsPage() {
               <Divider />
               <Box>
                 <pre style={{ margin: 0, fontSize: 14 }}>
-                  {JSON.stringify({ filters, queryKey: submissionsQuery.queryKey }, null, 2)}
+                  {JSON.stringify({ filters, status: submissionsQuery.status }, null, 2)}
                 </pre>
               </Box>
             </Stack>
