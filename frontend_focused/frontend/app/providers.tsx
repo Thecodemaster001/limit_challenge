@@ -1,10 +1,12 @@
 'use client';
 
 import { CssBaseline, ThemeProvider } from '@mui/material';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { PropsWithChildren, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { PropsWithChildren, useEffect, useState } from 'react';
 
+import { onSessionExpired } from '@/lib/api-client';
 import { theme } from '@/lib/theme';
 
 const MAX_QUERY_RETRIES = 2;
@@ -23,11 +25,27 @@ function createQueryClient() {
   });
 }
 
+function SessionExpiredRedirect() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    onSessionExpired(() => {
+      queryClient.clear();
+      const currentPath = `${window.location.pathname}${window.location.search}`;
+      router.replace(`/login?next=${encodeURIComponent(currentPath)}`);
+    });
+  }, [queryClient, router]);
+
+  return null;
+}
+
 export default function Providers({ children }: PropsWithChildren) {
   const [queryClient] = useState(createQueryClient);
 
   return (
     <QueryClientProvider client={queryClient}>
+      <SessionExpiredRedirect />
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}

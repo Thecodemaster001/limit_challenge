@@ -85,3 +85,15 @@ export interface SubmissionListFilters {
   brokerId?: string;
   companySearch?: string;
 }
+
+export interface CurrentUser {
+  id: number;
+  username: string;
+  fullName: string;
+  teamMember: TeamMember | null;
+}
+
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
