@@ -43,6 +43,11 @@ class NoteSerializer(serializers.ModelSerializer):
         fields = ["id", "author_name", "body", "created_at"]
 
 
+class StatusCountSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=models.Submission.Status.choices)
+    count = serializers.IntegerField()
+
+
 class LatestNoteSerializer(serializers.Serializer):
     author_name = serializers.CharField()
     body_preview = serializers.CharField()
