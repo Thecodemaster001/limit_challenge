@@ -1,8 +1,9 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
+import { rememberListQuery } from '@/lib/list-return-path';
 import {
   clearSubmissionFilters,
   parseSubmissionSearch,
@@ -18,6 +19,8 @@ export function useSubmissionSearch() {
   const pathname = usePathname();
 
   const search = useMemo(() => parseSubmissionSearch(searchParams), [searchParams]);
+
+  useEffect(() => rememberListQuery(serializeSubmissionSearch(search)), [search]);
 
   const replaceSearch = useCallback(
     (nextSearch: SubmissionSearch) => {
