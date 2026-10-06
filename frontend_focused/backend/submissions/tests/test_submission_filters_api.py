@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from django.urls import reverse
@@ -77,6 +78,20 @@ def test_created_date_range_includes_both_end_days(api_client):
     ids = result_ids(api_client, {"createdFrom": "2026-03-10", "createdTo": "2026-03-12"})
 
     assert set(ids) == {first_day.id, last_day.id}
+
+
+def test_date_range_follows_the_business_time_zone(api_client, settings):
+    settings.TIME_ZONE = "America/New_York"
+    # 9pm in New York on March 10 is already March 11 in UTC.
+    evening_in_new_york = SubmissionFactory(
+        created_at=datetime(2026, 3, 11, 1, tzinfo=ZoneInfo("UTC"))
+    )
+
+    march_tenth = {"createdFrom": "2026-03-10", "createdTo": "2026-03-10"}
+    march_eleventh = {"createdFrom": "2026-03-11", "createdTo": "2026-03-11"}
+
+    assert result_ids(api_client, march_tenth) == [evening_in_new_york.id]
+    assert result_ids(api_client, march_eleventh) == []
 
 
 @pytest.mark.parametrize(

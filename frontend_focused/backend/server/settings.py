@@ -121,7 +121,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+# The business day for "Received" dates and date filters; timestamps are stored in UTC.
+TIME_ZONE = env("TIME_ZONE", default="America/New_York")
 
 USE_I18N = True
 

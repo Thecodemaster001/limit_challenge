@@ -121,6 +121,8 @@ def test_refresh_rotates_tokens_and_blacklists_the_old_refresh_token(browser_cli
     browser_client.cookies[REFRESH_TOKEN_COOKIE] = old_refresh_token
     reused = browser_client.post(reverse("auth-refresh"), **csrf_header(browser_client))
     assert reused.status_code == 401
+    for cookie_name in (ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE):
+        assert reused.cookies[cookie_name]["max-age"] == 0
 
 
 def test_refresh_without_a_cookie_returns_401(browser_client):
@@ -166,3 +168,12 @@ def test_rate_limit_applies_per_username(browser_client, user, django_user_model
 
     assert log_in(browser_client, user.username).status_code == 429
     assert log_in(browser_client, other_user.username).status_code == 200
+
+
+@pytest.mark.parametrize("body", [[], "username", 42])
+def test_login_with_a_malformed_body_is_a_validation_error(browser_client, body):
+    response = browser_client.post(
+        reverse("auth-login"), body, format="json", **csrf_header(browser_client)
+    )
+
+    assert response.status_code == 400

@@ -1,4 +1,7 @@
+from datetime import datetime, time, timedelta
+
 from django.db.models import Case, Exists, IntegerField, OuterRef, Value, When
+from django.utils import timezone
 from django_filters import rest_framework as filters
 
 from submissions import models
@@ -48,8 +51,8 @@ class SubmissionFilter(filters.FilterSet):
     broker_id = filters.NumberFilter(field_name="broker_id")
     owner_id = filters.NumberFilter(field_name="owner_id")
     company_search = filters.CharFilter(field_name="company__legal_name", lookup_expr="icontains")
-    created_from = filters.DateFilter(field_name="created_at", lookup_expr="date__gte")
-    created_to = filters.DateFilter(field_name="created_at", lookup_expr="date__lte")
+    created_from = filters.DateFilter(method="filter_created_from")
+    created_to = filters.DateFilter(method="filter_created_to")
     has_documents = filters.BooleanFilter(method="filter_has_related", label="Has documents")
     has_notes = filters.BooleanFilter(method="filter_has_related", label="Has notes")
     ordering = SubmissionOrderingFilter(
@@ -64,6 +67,18 @@ class SubmissionFilter(filters.FilterSet):
     class Meta:
         model = models.Submission
         fields = []
+
+    @staticmethod
+    def start_of_day(day):
+        """Midnight of `day` in the business time zone (settings.TIME_ZONE), as a range bound
+        that can use the created_at index, unlike a `__date` lookup."""
+        return datetime.combine(day, time.min, tzinfo=timezone.get_default_timezone())
+
+    def filter_created_from(self, queryset, name, value):
+        return queryset.filter(created_at__gte=self.start_of_day(value))
+
+    def filter_created_to(self, queryset, name, value):
+        return queryset.filter(created_at__lt=self.start_of_day(value + timedelta(days=1)))
 
     def filter_has_related(self, queryset, name, value):
         if value is None:

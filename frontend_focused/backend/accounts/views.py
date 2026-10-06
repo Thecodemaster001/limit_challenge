@@ -10,7 +10,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -63,19 +63,28 @@ class LoginView(CookieTokenView):
         return response
 
 
+def session_expired_response():
+    """A 401 that also clears the dead cookies, so the Next proxy stops admitting the browser."""
+    response = Response(
+        {"detail": "Session expired. Please sign in again."},
+        status=status.HTTP_401_UNAUTHORIZED,
+    )
+    clear_auth_cookies(response)
+    return response
+
+
 class RefreshView(CookieTokenView):
-    @extend_schema(request=None, responses={204: None})
+    @extend_schema(request=None, responses={204: None, 401: None})
     def post(self, request):
-        session_expired = InvalidToken("Session expired. Please sign in again.")
         raw_refresh_token = request.COOKIES.get(REFRESH_TOKEN_COOKIE)
         if not raw_refresh_token:
-            raise session_expired
+            return session_expired_response()
 
         serializer = TokenRefreshSerializer(data={"refresh": raw_refresh_token})
         try:
             serializer.is_valid(raise_exception=True)
-        except (TokenError, get_user_model().DoesNotExist) as error:
-            raise session_expired from error
+        except (TokenError, get_user_model().DoesNotExist):
+            return session_expired_response()
 
         response = Response(status=status.HTTP_204_NO_CONTENT)
         set_auth_cookies(
