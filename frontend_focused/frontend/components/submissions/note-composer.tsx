@@ -25,10 +25,16 @@ function useShortcutModifier() {
 export default function NoteComposer({ submissionId }: { submissionId: string | number }) {
   const { data: user } = useCurrentUser();
   const authorName = user?.teamMember?.fullName || user?.fullName || user?.username || 'You';
-  const addNote = useAddNote(submissionId, authorName);
   const notify = useNotify();
   const shortcutModifier = useShortcutModifier();
   const [draft, setDraft] = useState('');
+  const addNote = useAddNote(submissionId, authorName, {
+    onFailure: (failedBody, error) => {
+      // Keep whatever the user has typed since; only refill an empty box.
+      setDraft((current) => current || failedBody);
+      notify(`Note not posted. ${parseApiError(error).message}`, { severity: 'error' });
+    },
+  });
 
   const body = draft.trim();
   const isTooLong = draft.length > NOTE_MAX_LENGTH;
@@ -37,12 +43,7 @@ export default function NoteComposer({ submissionId }: { submissionId: string | 
   function post() {
     if (!canPost) return;
     setDraft('');
-    addNote.mutate(body, {
-      onError: (error) => {
-        setDraft((current) => current || body);
-        notify(`Note not posted. ${parseApiError(error).message}`, { severity: 'error' });
-      },
-    });
+    addNote.mutate(body);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {

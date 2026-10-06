@@ -7,10 +7,11 @@ import { DebouncedTextField } from '@/components/debounced-text-field';
 import KeyboardKey from '@/components/keyboard-key';
 import FilterMenu from '@/components/submissions/filter-menu';
 import MoreFiltersPopover from '@/components/submissions/more-filters-popover';
-import { PriorityBars } from '@/components/submissions/priority-indicator';
 import SortMenu from '@/components/submissions/sort-menu';
-import { StatusDot } from '@/components/submissions/status-indicator';
-import { PRIORITY_OPTIONS, STATUS_OPTIONS } from '@/lib/submission-display';
+import {
+  PRIORITY_MENU_OPTIONS,
+  STATUS_MENU_OPTIONS,
+} from '@/components/submissions/triage-menu-options';
 import { SubmissionSearch } from '@/lib/submission-search-params';
 import { Broker, StatusCount, SubmissionPriority, SubmissionStatus, TeamMember } from '@/lib/types';
 
@@ -23,12 +24,6 @@ interface SubmissionFilterBarProps {
   statusCounts?: StatusCount[];
   onChange: (changes: Partial<SubmissionSearch>) => void;
 }
-
-const priorityMenuOptions = PRIORITY_OPTIONS.map((option) => ({
-  value: option.value,
-  label: option.label,
-  icon: <PriorityBars priority={option.value} />,
-}));
 
 function toIdList(id: number | undefined) {
   return id === undefined ? [] : [String(id)];
@@ -45,10 +40,8 @@ export default function SubmissionFilterBar({
   statusCounts,
   onChange,
 }: SubmissionFilterBarProps) {
-  const statusMenuOptions = STATUS_OPTIONS.map((option) => ({
-    value: option.value,
-    label: option.label,
-    icon: <StatusDot color={option.color} />,
+  const statusMenuOptions = STATUS_MENU_OPTIONS.map((option) => ({
+    ...option,
     count: statusCounts?.find((item) => item.status === option.value)?.count,
   }));
 
@@ -86,7 +79,7 @@ export default function SubmissionFilterBar({
       <FilterMenu
         label="Priority"
         multiple
-        options={priorityMenuOptions}
+        options={PRIORITY_MENU_OPTIONS}
         selected={search.priority}
         onChange={(priority) => onChange({ priority: priority as SubmissionPriority[] })}
       />

@@ -32,15 +32,13 @@ import { useIsHydrated } from '@/lib/hooks/use-is-hydrated';
 import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts';
 import { useSubmissionNeighbors } from '@/lib/hooks/use-submission-neighbors';
 import { useSubmissionDetail } from '@/lib/hooks/use-submissions';
-import { listReturnPath } from '@/lib/list-return-path';
+import { listReturnPath, SUBMISSIONS_PATH } from '@/lib/list-return-path';
 import { touchScreen } from '@/lib/theme';
 import { SubmissionDetail } from '@/lib/types';
 
-const LIST_PATH = '/submissions';
-
 /** The list URL with the filters the user last had, read after hydration to avoid a mismatch. */
 function useListReturnPath() {
-  return useIsHydrated() ? listReturnPath() : LIST_PATH;
+  return useIsHydrated() ? listReturnPath() : SUBMISSIONS_PATH;
 }
 
 function Breadcrumb({ current }: { current?: string }) {

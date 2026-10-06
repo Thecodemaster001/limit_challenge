@@ -41,6 +41,33 @@ function DocumentIcon({ documentType }: { documentType: string }) {
   );
 }
 
+const documentRow = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 1.25,
+  p: 0.75,
+  mx: -0.75,
+  borderRadius: 1.5,
+  color: 'text.primary',
+};
+
+function DocumentSummary({ document }: { document: Document }) {
+  return (
+    <>
+      <DocumentIcon documentType={document.docType} />
+      <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+        <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
+          {document.title}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" component="p">
+          {document.docType} · {formatDate(document.uploadedAt)}
+          {!document.fileUrl && ' · No file attached'}
+        </Typography>
+      </Box>
+    </>
+  );
+}
+
 export default function SubmissionDocuments({ documents }: { documents: Document[] }) {
   return (
     <Box component="section" aria-labelledby="documents-heading">
@@ -55,38 +82,30 @@ export default function SubmissionDocuments({ documents }: { documents: Document
         <Stack spacing={0.5} component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
           {documents.map((document) => (
             <Box component="li" key={document.id}>
-              <Link
-                href={document.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                underline="none"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.25,
-                  p: 0.75,
-                  mx: -0.75,
-                  borderRadius: 1.5,
-                  color: 'text.primary',
-                  '&:hover': { bgcolor: 'action.hover' },
-                  '&:hover .open-icon': { opacity: 1 },
-                }}
-              >
-                <DocumentIcon documentType={document.docType} />
-                <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                  <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
-                    {document.title}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" component="p">
-                    {document.docType} · {formatDate(document.uploadedAt)}
-                  </Typography>
+              {document.fileUrl ? (
+                <Link
+                  href={document.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="none"
+                  sx={{
+                    ...documentRow,
+                    '&:hover': { bgcolor: 'action.hover' },
+                    '&:hover .open-icon': { opacity: 1 },
+                  }}
+                >
+                  <DocumentSummary document={document} />
+                  <OpenInNewOutlined
+                    className="open-icon"
+                    aria-label="Opens in a new tab"
+                    sx={{ fontSize: 14, color: 'text.secondary', opacity: 0 }}
+                  />
+                </Link>
+              ) : (
+                <Box sx={documentRow}>
+                  <DocumentSummary document={document} />
                 </Box>
-                <OpenInNewOutlined
-                  className="open-icon"
-                  aria-label="Opens in a new tab"
-                  sx={{ fontSize: 14, color: 'text.secondary', opacity: 0 }}
-                />
-              </Link>
+              )}
             </Box>
           ))}
         </Stack>

@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 
-import { toApiDate } from '@/lib/format';
+import { addDaysToApiDate, businessDate } from '@/lib/format';
 import { hasInvalidDateRange, SubmissionSearch } from '@/lib/submission-search-params';
 
 interface MoreFiltersPopoverProps {
@@ -39,10 +39,9 @@ function fromPresence(value: Presence): boolean | undefined {
   return value === 'with';
 }
 
+/** The date `days` ago in the business time zone, matching how the API filters. */
 function daysAgo(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  return toApiDate(date);
+  return addDaysToApiDate(businessDate(new Date()), -days);
 }
 
 function PresenceToggle({

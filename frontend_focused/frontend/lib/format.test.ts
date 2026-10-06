@@ -1,26 +1,62 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDateRange, formatRelativeTime, parseApiDate, pluralize, toApiDate } from './format';
+import {
+  addDaysToApiDate,
+  businessDate,
+  formatDateRange,
+  formatDateTime,
+  formatRelativeTime,
+  isValidApiDate,
+  pluralize,
+} from './format';
 
+// All instants are written with explicit offsets, so the results don't depend on the
+// time zone of the machine running the tests.
 describe('formatRelativeTime', () => {
-  const now = new Date(2026, 9, 6, 15, 0);
+  const now = new Date('2026-10-06T15:00:00-04:00');
 
   it.each([
-    [new Date(2026, 9, 6, 14, 59, 30), 'just now'],
-    [new Date(2026, 9, 6, 14, 48), '12m ago'],
-    [new Date(2026, 9, 6, 9, 30), '5h ago'],
-    [new Date(2026, 9, 5, 23, 0), 'Yesterday'],
-    [new Date(2026, 9, 1, 12, 0), '5d ago'],
-    [new Date(2026, 7, 14, 12, 0), 'Aug 14'],
-    [new Date(2025, 11, 30, 12, 0), 'Dec 30, 2025'],
-  ])('formats %s as %s', (date, expected) => {
-    expect(formatRelativeTime(date.toISOString(), now)).toBe(expected);
+    ['2026-10-06T14:59:30-04:00', 'just now'],
+    ['2026-10-06T14:48:00-04:00', '12m ago'],
+    ['2026-10-06T09:30:00-04:00', '5h ago'],
+    ['2026-10-05T23:00:00-04:00', 'Yesterday'],
+    ['2026-10-01T12:00:00-04:00', '5d ago'],
+    ['2026-08-14T12:00:00-04:00', 'Aug 14'],
+    ['2025-12-30T12:00:00-05:00', 'Dec 30, 2025'],
+  ])('formats %s as %s', (value, expected) => {
+    expect(formatRelativeTime(value, now)).toBe(expected);
+  });
+
+  it('counts calendar days in the business time zone', () => {
+    // 11pm in New York is already the next day in UTC; it still reads as yesterday.
+    const lateEvening = '2026-10-06T03:00:00Z';
+    expect(formatRelativeTime(lateEvening, new Date('2026-10-06T12:00:00-04:00'))).toBe(
+      'Yesterday',
+    );
+  });
+});
+
+describe('business time zone', () => {
+  it('reads the calendar date in New York, not UTC', () => {
+    expect(businessDate(new Date('2026-10-07T02:00:00Z'))).toBe('2026-10-06');
+  });
+
+  it('labels timestamps with the zone, switching between EST and EDT', () => {
+    expect(formatDateTime('2026-10-04T12:59:00Z')).toBe('Oct 4, 2026, 8:59 AM EDT');
+    expect(formatDateTime('2026-01-15T17:30:00Z')).toBe('Jan 15, 2026, 12:30 PM EST');
   });
 });
 
 describe('API dates', () => {
-  it('round-trips a calendar date in local time', () => {
-    expect(toApiDate(parseApiDate('2026-03-10'))).toBe('2026-03-10');
+  it('validates real calendar dates', () => {
+    expect(isValidApiDate('2026-03-10')).toBe(true);
+    expect(isValidApiDate('2026-02-31')).toBe(false);
+    expect(isValidApiDate('yesterday')).toBe(false);
+  });
+
+  it('adds and subtracts days across month boundaries', () => {
+    expect(addDaysToApiDate('2026-03-01', -1)).toBe('2026-02-28');
+    expect(addDaysToApiDate('2026-12-31', 1)).toBe('2027-01-01');
   });
 });
 

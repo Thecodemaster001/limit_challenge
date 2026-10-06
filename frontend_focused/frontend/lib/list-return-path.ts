@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'submissions:list-query';
-const LIST_PATH = '/submissions';
+export const SUBMISSIONS_PATH = '/submissions';
 
 /** Remembers the list's query string so "back to submissions" restores the same view. */
 export function rememberListQuery(queryString: string) {
@@ -21,5 +21,5 @@ export function rememberedListQuery() {
 
 export function listReturnPath() {
   const queryString = rememberedListQuery();
-  return queryString ? `${LIST_PATH}?${queryString}` : LIST_PATH;
+  return queryString ? `${SUBMISSIONS_PATH}?${queryString}` : SUBMISSIONS_PATH;
 }

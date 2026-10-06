@@ -30,6 +30,9 @@ export function DebouncedTextField({
 
   useEffect(() => () => clearTimeout(timeoutRef.current), []);
 
+  // A change from outside (e.g. "Clear all") wins over whatever was still waiting to commit.
+  useEffect(() => clearTimeout(timeoutRef.current), [value]);
+
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const nextValue = event.target.value;
     setDraft(nextValue);

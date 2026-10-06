@@ -24,6 +24,9 @@ export const submissionQueryKeys = {
   list: (query: SubmissionListQuery) => [...submissionQueryKeys.lists(), query] as const,
   detail: (id: string | number) => [...submissionQueryKeys.all, 'detail', String(id)] as const,
   allStatusCounts: () => [...submissionQueryKeys.all, 'status-counts'] as const,
+  /** Snapshots of list pages for next/previous; writes don't refresh them on purpose. */
+  queues: () => [...submissionQueryKeys.all, 'queue'] as const,
+  queue: (query: SubmissionListQuery) => [...submissionQueryKeys.queues(), query] as const,
   statusCounts: (query: SubmissionListQuery) =>
     [...submissionQueryKeys.allStatusCounts(), query] as const,
 };
@@ -57,6 +60,27 @@ export function useSubmissionsList(query: SubmissionListQuery, { enabled = true 
   });
 }
 
+/**
+ * A list page frozen when the user opens a submission, so next/previous still work after a
+ * change moves the current submission out of the filtered list. It starts from the list
+ * the user was looking at, and the list discards it on return.
+ */
+export function useSubmissionQueuePage(query: SubmissionListQuery, { enabled = true } = {}) {
+  const queryClient = useQueryClient();
+  return useQuery({
+    queryKey: submissionQueryKeys.queue(query),
+    queryFn: () => fetchSubmissions(query),
+    staleTime: Infinity,
+    initialData: () =>
+      queryClient.getQueryData<PaginatedResponse<SubmissionListItem>>(
+        submissionQueryKeys.list(query),
+      ),
+    initialDataUpdatedAt: () =>
+      queryClient.getQueryState(submissionQueryKeys.list(query))?.dataUpdatedAt,
+    enabled,
+  });
+}
+
 export function useSubmissionDetail(id: string | number) {
   return useQuery({ ...submissionDetailQueryOptions(id), enabled: Boolean(id) });
 }
@@ -73,16 +97,58 @@ export function isPendingNote(note: NoteDetail) {
   return note.id < 0;
 }
 
-/** Adds a note right away and rolls it back if the server rejects it. */
-export function useAddNote(submissionId: string | number, authorName: string) {
+/** All writes to one submission share a key, so the last to settle can refetch it. */
+function submissionWriteKey(submissionId: string | number) {
+  return [...submissionQueryKeys.detail(submissionId), 'write'] as const;
+}
+
+/**
+ * Refreshes everything a write may have changed. The detail is refetched only once no other
+ * write to it is still pending, so a refetch can't wipe another write's optimistic change.
+ */
+function useRefreshAfterWrite(submissionId: string | number) {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: submissionQueryKeys.lists() });
+    queryClient.invalidateQueries({ queryKey: submissionQueryKeys.allStatusCounts() });
+    if (queryClient.isMutating({ mutationKey: submissionWriteKey(submissionId) }) === 1) {
+      queryClient.invalidateQueries({ queryKey: submissionQueryKeys.detail(submissionId) });
+    }
+  };
+}
+
+interface AddNoteCallbacks {
+  /** Runs for every failed note, even when another note was posted after it. */
+  onFailure?: (body: string, error: unknown) => void;
+}
+
+/** Adds a note right away and removes it again if the server rejects it. */
+export function useAddNote(
+  submissionId: string | number,
+  authorName: string,
+  { onFailure }: AddNoteCallbacks = {},
+) {
   const queryClient = useQueryClient();
   const detailKey = submissionQueryKeys.detail(submissionId);
+  const refreshAfterWrite = useRefreshAfterWrite(submissionId);
+
+  const replaceNote = (noteId: number, replacement?: NoteDetail) =>
+    queryClient.setQueryData<SubmissionDetail>(detailKey, (detail) =>
+      detail
+        ? {
+            ...detail,
+            notes: replacement
+              ? detail.notes.map((note) => (note.id === noteId ? replacement : note))
+              : detail.notes.filter((note) => note.id !== noteId),
+          }
+        : detail,
+    );
 
   return useMutation({
+    mutationKey: submissionWriteKey(submissionId),
     mutationFn: (body: string) => postNote(submissionId, body),
     onMutate: async (body) => {
       await queryClient.cancelQueries({ queryKey: detailKey });
-      const previous = queryClient.getQueryData<SubmissionDetail>(detailKey);
       const optimisticNote: NoteDetail = {
         id: -Date.now(),
         authorName,
@@ -92,28 +158,14 @@ export function useAddNote(submissionId: string | number, authorName: string) {
       queryClient.setQueryData<SubmissionDetail>(detailKey, (detail) =>
         detail ? { ...detail, notes: [optimisticNote, ...detail.notes] } : detail,
       );
-      return { previous, optimisticNoteId: optimisticNote.id };
+      return { optimisticNoteId: optimisticNote.id };
     },
-    onError: (_error, _body, context) => {
-      if (context?.previous) queryClient.setQueryData(detailKey, context.previous);
+    onError: (error, body, context) => {
+      if (context) replaceNote(context.optimisticNoteId);
+      onFailure?.(body, error);
     },
-    onSuccess: (note, _body, context) => {
-      queryClient.setQueryData<SubmissionDetail>(detailKey, (detail) =>
-        detail
-          ? {
-              ...detail,
-              notes: detail.notes.map((existing) =>
-                existing.id === context?.optimisticNoteId ? note : existing,
-              ),
-            }
-          : detail,
-      );
-    },
-    onSettled: () => {
-      // The list's note count, latest note and "has notes" counts may all have changed.
-      queryClient.invalidateQueries({ queryKey: submissionQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: submissionQueryKeys.allStatusCounts() });
-    },
+    onSuccess: (note, _body, context) => replaceNote(context.optimisticNoteId, note),
+    onSettled: refreshAfterWrite,
   });
 }
 
@@ -126,30 +178,64 @@ async function patchSubmission(submissionId: string | number, update: Submission
   return response.data;
 }
 
-/** Changes status, priority or owner right away and rolls back if the server rejects it. */
-export function useUpdateSubmission(submissionId: string | number) {
+export interface TriageChange {
+  changes: SubmissionTriageUpdate;
+  /** True when this change reverts an earlier one from its Undo action. */
+  isUndo?: boolean;
+}
+
+interface UpdateSubmissionCallbacks {
+  /** Runs for every successful change; `previous` holds the values to restore for Undo. */
+  onChanged?: (change: TriageChange, previous: SubmissionTriageUpdate) => void;
+  /** Runs for every failed change, even when another change was made after it. */
+  onFailure?: (error: unknown) => void;
+}
+
+/** The current values in `source` of exactly the fields that `changes` touches. */
+function pickTriageFields(source: SubmissionDetail, changes: SubmissionTriageUpdate) {
+  const fields: SubmissionTriageUpdate = {};
+  if (changes.status) fields.status = source.status;
+  if (changes.priority) fields.priority = source.priority;
+  if (changes.owner) fields.owner = source.owner;
+  return fields;
+}
+
+/** Changes status, priority or owner right away and restores only those fields on failure. */
+export function useUpdateSubmission(
+  submissionId: string | number,
+  { onChanged, onFailure }: UpdateSubmissionCallbacks = {},
+) {
   const queryClient = useQueryClient();
   const detailKey = submissionQueryKeys.detail(submissionId);
+  const refreshAfterWrite = useRefreshAfterWrite(submissionId);
+
+  const mergeIntoDetail = (fields: Partial<SubmissionDetail>) =>
+    queryClient.setQueryData<SubmissionDetail>(detailKey, (detail) =>
+      detail ? { ...detail, ...fields } : detail,
+    );
 
   return useMutation({
-    mutationFn: (update: SubmissionTriageUpdate) => patchSubmission(submissionId, update),
-    onMutate: async (update) => {
+    mutationKey: submissionWriteKey(submissionId),
+    mutationFn: ({ changes }: TriageChange) => patchSubmission(submissionId, changes),
+    onMutate: async ({ changes }) => {
       await queryClient.cancelQueries({ queryKey: detailKey });
-      const previous = queryClient.getQueryData<SubmissionDetail>(detailKey);
-      queryClient.setQueryData<SubmissionDetail>(detailKey, (detail) =>
-        detail ? { ...detail, ...update } : detail,
-      );
+      const detail = queryClient.getQueryData<SubmissionDetail>(detailKey);
+      const previous = detail ? pickTriageFields(detail, changes) : {};
+      mergeIntoDetail(changes);
       return { previous };
     },
-    onError: (_error, _update, context) => {
-      if (context?.previous) queryClient.setQueryData(detailKey, context.previous);
+    onError: (error, _change, context) => {
+      if (context) mergeIntoDetail(context.previous);
+      onFailure?.(error);
     },
-    onSuccess: (submission) => {
-      queryClient.setQueryData(detailKey, submission);
+    onSuccess: (submission, change, context) => {
+      // Only this change's fields: another change may still be pending on the others.
+      mergeIntoDetail({
+        ...pickTriageFields(submission, change.changes),
+        updatedAt: submission.updatedAt,
+      });
+      onChanged?.(change, context.previous);
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: submissionQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: submissionQueryKeys.allStatusCounts() });
-    },
+    onSettled: refreshAfterWrite,
   });
 }

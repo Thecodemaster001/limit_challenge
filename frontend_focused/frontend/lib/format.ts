@@ -3,15 +3,71 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-const dateFormatter = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'medium' });
-const dateTimeFormatter = new Intl.DateTimeFormat(LOCALE, {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
-const monthDayFormatter = new Intl.DateTimeFormat(LOCALE, { month: 'short', day: 'numeric' });
+/**
+ * Dates are shown and filtered in the team's business time zone, not each browser's, so
+ * everyone sees the same "Received" day. Must match Django's TIME_ZONE setting.
+ */
+export const BUSINESS_TIME_ZONE = 'America/New_York';
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
+  dateStyle: 'medium',
+  timeZone: BUSINESS_TIME_ZONE,
+});
+const dateTimeFormatter = new Intl.DateTimeFormat(LOCALE, {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZoneName: 'short',
+  timeZone: BUSINESS_TIME_ZONE,
+});
+const monthDayFormatter = new Intl.DateTimeFormat(LOCALE, {
+  month: 'short',
+  day: 'numeric',
+  timeZone: BUSINESS_TIME_ZONE,
+});
+// en-CA formats dates as YYYY-MM-DD, the API's date format.
+const apiDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: BUSINESS_TIME_ZONE,
+});
+// Calendar dates ("2026-03-10") have no time zone; formatting them in UTC never shifts the day.
+const calendarMonthDayFormatter = new Intl.DateTimeFormat(LOCALE, {
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** The business-time-zone calendar date of an instant, as an API date ("2026-10-06"). */
+export function businessDate(date: Date) {
+  return apiDateFormatter.format(date);
+}
+
+function calendarDateToUtc(value: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function calendarDayNumber(value: string) {
+  return calendarDateToUtc(value).getTime() / DAY;
+}
+
+/** True for real calendar dates in API format; rejects e.g. 2026-02-31. */
+export function isValidApiDate(value: string) {
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    calendarDateToUtc(value).toISOString().slice(0, 10) === value
+  );
+}
+
+/** "2026-03-10" plus `days` (negative to go back). */
+export function addDaysToApiDate(value: string, days: number) {
+  const date = calendarDateToUtc(value);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 /** "Oct 4, 2026" */
@@ -19,7 +75,7 @@ export function formatDate(value: string) {
   return dateFormatter.format(new Date(value));
 }
 
-/** "Oct 4, 2026, 8:59 AM" */
+/** "Oct 4, 2026, 8:59 AM EDT" */
 export function formatDateTime(value: string) {
   return dateTimeFormatter.format(new Date(value));
 }
@@ -32,30 +88,19 @@ export function formatRelativeTime(value: string, now: Date = new Date()) {
   if (elapsed < MINUTE) return 'just now';
   if (elapsed < HOUR) return `${Math.floor(elapsed / MINUTE)}m ago`;
 
-  const calendarDays = Math.round((startOfDay(now).getTime() - startOfDay(date).getTime()) / DAY);
+  const calendarDays = calendarDayNumber(businessDate(now)) - calendarDayNumber(businessDate(date));
   if (calendarDays === 0) return `${Math.floor(elapsed / HOUR)}h ago`;
   if (calendarDays === 1) return 'Yesterday';
   if (calendarDays < 7) return `${calendarDays}d ago`;
-  if (date.getFullYear() === now.getFullYear()) return monthDayFormatter.format(date);
+  if (businessDate(date).slice(0, 4) === businessDate(now).slice(0, 4)) {
+    return monthDayFormatter.format(date);
+  }
   return formatDate(value);
-}
-
-/** Formats a Date as an API date ("YYYY-MM-DD") in local time. */
-export function toApiDate(date: Date) {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-/** Parses an API date ("2026-03-10") as a local calendar date rather than UTC midnight. */
-export function parseApiDate(value: string) {
-  const [year, month, day] = value.split('-').map(Number);
-  return new Date(year, month - 1, day);
 }
 
 /** "Mar 10 – Mar 14", "From Mar 10", "Until Mar 14" */
 export function formatDateRange(from?: string, to?: string) {
-  const format = (value: string) => monthDayFormatter.format(parseApiDate(value));
+  const format = (value: string) => calendarMonthDayFormatter.format(calendarDateToUtc(value));
   if (from && to) return `${format(from)} – ${format(to)}`;
   if (from) return `From ${format(from)}`;
   if (to) return `Until ${format(to)}`;

@@ -35,9 +35,27 @@ export const ensureCsrfCookie = createSingleFlight(async () => {
   if (!hasCsrfCookie()) await sessionClient.get('/auth/csrf/');
 });
 
-const refreshSession = createSingleFlight(async () => {
+const SESSION_REFRESH_LOCK = 'submission-tracker:session-refresh';
+
+async function refreshUnlessAnotherTabDid() {
+  // Tabs share the cookies, and each refresh token works only once. Another tab may have
+  // refreshed while this one waited for the lock; if so, the session is already fresh.
+  const isAlreadyRefreshed = await sessionClient.get('/auth/me/').then(
+    () => true,
+    () => false,
+  );
+  if (isAlreadyRefreshed) return;
   await ensureCsrfCookie();
   await sessionClient.post('/auth/refresh/');
+}
+
+/** One refresh at a time per tab (single flight) and across tabs (Web Locks, where supported). */
+const refreshSession = createSingleFlight(async () => {
+  if ('locks' in navigator) {
+    await navigator.locks.request(SESSION_REFRESH_LOCK, refreshUnlessAnotherTabDid);
+  } else {
+    await refreshUnlessAnotherTabDid();
+  }
 });
 
 apiClient.interceptors.request.use(async (config) => {

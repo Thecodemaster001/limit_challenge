@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { rememberListQuery } from '@/lib/list-return-path';
@@ -15,19 +15,20 @@ import {
 /** The list search, read from and written to the URL so every view is linkable. */
 export function useSubmissionSearch() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
 
   const search = useMemo(() => parseSubmissionSearch(searchParams), [searchParams]);
 
   useEffect(() => rememberListQuery(serializeSubmissionSearch(search)), [search]);
 
+  // The native History API updates useSearchParams immediately, without a server round
+  // trip: the list's data is fetched in the browser, so nothing on the server re-renders.
   const replaceSearch = useCallback(
     (nextSearch: SubmissionSearch) => {
       const queryString = serializeSubmissionSearch(nextSearch);
-      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+      window.history.replaceState(null, '', queryString ? `${pathname}?${queryString}` : pathname);
     },
-    [pathname, router],
+    [pathname],
   );
 
   const updateSearch = useCallback(

@@ -1,4 +1,6 @@
-export const DEFAULT_PATH = '/submissions';
+import { SUBMISSIONS_PATH } from '@/lib/list-return-path';
+
+export const DEFAULT_PATH = SUBMISSIONS_PATH;
 // Placeholder origin used only to resolve the candidate the way a browser would.
 const APP_ORIGIN = 'http://app.invalid';
 

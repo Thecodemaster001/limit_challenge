@@ -6,34 +6,28 @@ import { ReactNode } from 'react';
 import { useNotify } from '@/components/notifications';
 import PersonAvatar from '@/components/person-avatar';
 import RelativeTime from '@/components/relative-time';
-import PriorityIndicator, { PriorityBars } from '@/components/submissions/priority-indicator';
+import PriorityIndicator from '@/components/submissions/priority-indicator';
 import PropertyMenu from '@/components/submissions/property-menu';
-import StatusIndicator, { StatusDot } from '@/components/submissions/status-indicator';
+import StatusIndicator from '@/components/submissions/status-indicator';
+import {
+  PRIORITY_MENU_OPTIONS,
+  STATUS_MENU_OPTIONS,
+} from '@/components/submissions/triage-menu-options';
 import { parseApiError } from '@/lib/api-errors';
 import { formatDate } from '@/lib/format';
 import { useCurrentUser } from '@/lib/hooks/use-auth';
 import { useUpdateSubmission } from '@/lib/hooks/use-submissions';
 import { useTeamMembers } from '@/lib/hooks/use-team-members';
-import {
-  PRIORITY_OPTIONS,
-  priorityOption,
-  STATUS_OPTIONS,
-  statusOption,
-} from '@/lib/submission-display';
+import { priorityOption, statusOption } from '@/lib/submission-display';
 import { touchScreen } from '@/lib/theme';
 import { SubmissionDetail, SubmissionTriageUpdate } from '@/lib/types';
 
-const statusMenuOptions = STATUS_OPTIONS.map((option) => ({
-  value: option.value,
-  label: option.label,
-  icon: <StatusDot color={option.color} />,
-}));
-
-const priorityMenuOptions = PRIORITY_OPTIONS.map((option) => ({
-  value: option.value,
-  label: option.label,
-  icon: <PriorityBars priority={option.value} />,
-}));
+function describeChange(changes: SubmissionTriageUpdate) {
+  if (changes.status) return `Status changed to ${statusOption(changes.status).label}`;
+  if (changes.priority) return `Priority set to ${priorityOption(changes.priority).label}`;
+  if (changes.owner) return `Assigned to ${changes.owner.fullName}`;
+  return 'Submission updated';
+}
 
 function Property({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -68,33 +62,30 @@ function OwnerValue({ name }: { name: string }) {
 }
 
 export default function SubmissionProperties({ submission }: { submission: SubmissionDetail }) {
-  const updateSubmission = useUpdateSubmission(submission.id);
   const teamMembers = useTeamMembers().data ?? [submission.owner];
   const currentTeamMemberId = useCurrentUser().data?.teamMember?.id;
   const notify = useNotify();
+  const updateSubmission = useUpdateSubmission(submission.id, {
+    onChanged: ({ changes, isUndo }, previous) => {
+      if (isUndo) {
+        notify('Change undone');
+        return;
+      }
+      notify(describeChange(changes), {
+        action: {
+          label: 'Undo',
+          onClick: () => updateSubmission.mutate({ changes: previous, isUndo: true }),
+        },
+      });
+    },
+    onFailure: (error) =>
+      notify(`Couldn't update this submission. ${parseApiError(error).message}`, {
+        severity: 'error',
+      }),
+  });
 
-  function notifyFailure(error: unknown) {
-    notify(`Couldn't update this submission. ${parseApiError(error).message}`, {
-      severity: 'error',
-    });
-  }
-
-  function applyChange(update: SubmissionTriageUpdate, description: string) {
-    const undo: SubmissionTriageUpdate = {
-      ...(update.status && { status: submission.status }),
-      ...(update.priority && { priority: submission.priority }),
-      ...(update.owner && { owner: submission.owner }),
-    };
-    updateSubmission.mutate(update, {
-      onSuccess: () =>
-        notify(description, {
-          action: {
-            label: 'Undo',
-            onClick: () => updateSubmission.mutate(undo, { onError: notifyFailure }),
-          },
-        }),
-      onError: notifyFailure,
-    });
+  function applyChange(changes: SubmissionTriageUpdate) {
+    updateSubmission.mutate({ changes });
   }
 
   const ownerMenuOptions = teamMembers.map((member) => ({
@@ -109,10 +100,8 @@ export default function SubmissionProperties({ submission }: { submission: Submi
         <PropertyMenu
           label="Status"
           value={submission.status}
-          options={statusMenuOptions}
-          onSelect={(status) =>
-            applyChange({ status }, `Status changed to ${statusOption(status).label}`)
-          }
+          options={STATUS_MENU_OPTIONS}
+          onSelect={(status) => applyChange({ status })}
         >
           <StatusIndicator status={submission.status} />
         </PropertyMenu>
@@ -121,10 +110,8 @@ export default function SubmissionProperties({ submission }: { submission: Submi
         <PropertyMenu
           label="Priority"
           value={submission.priority}
-          options={priorityMenuOptions}
-          onSelect={(priority) =>
-            applyChange({ priority }, `Priority set to ${priorityOption(priority).label}`)
-          }
+          options={PRIORITY_MENU_OPTIONS}
+          onSelect={(priority) => applyChange({ priority })}
         >
           <PriorityIndicator priority={submission.priority} />
         </PropertyMenu>
@@ -136,7 +123,7 @@ export default function SubmissionProperties({ submission }: { submission: Submi
           options={ownerMenuOptions}
           onSelect={(ownerId) => {
             const owner = teamMembers.find((member) => String(member.id) === ownerId);
-            if (owner) applyChange({ owner }, `Assigned to ${owner.fullName}`);
+            if (owner) applyChange({ owner });
           }}
         >
           <OwnerValue name={submission.owner.fullName} />

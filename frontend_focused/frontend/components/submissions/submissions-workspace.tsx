@@ -2,7 +2,9 @@
 
 import { InboxOutlined, SearchOffOutlined } from '@mui/icons-material';
 import { Box, Button, LinearProgress, Typography } from '@mui/material';
+import { useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
+import { useEffect } from 'react';
 
 import { EmptyState, ErrorState } from '@/components/page-states';
 import ActiveFilterChips from '@/components/submissions/active-filter-chips';
@@ -20,7 +22,7 @@ import { useIsHydrated } from '@/lib/hooks/use-is-hydrated';
 import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts';
 import { useStatusCounts } from '@/lib/hooks/use-status-counts';
 import { useSubmissionSearch } from '@/lib/hooks/use-submission-search';
-import { useSubmissionsList } from '@/lib/hooks/use-submissions';
+import { submissionQueryKeys, useSubmissionsList } from '@/lib/hooks/use-submissions';
 import { useTeamMembers } from '@/lib/hooks/use-team-members';
 import {
   countActiveFilters,
@@ -76,6 +78,12 @@ function isPageOutOfRange(error: unknown, page: number) {
 
 export default function SubmissionsWorkspace() {
   const { search, updateSearch, clearFilters } = useSubmissionSearch();
+  const queryClient = useQueryClient();
+
+  // Back on the list, the next submission opened should start a fresh next/previous queue.
+  useEffect(() => {
+    queryClient.removeQueries({ queryKey: submissionQueryKeys.queues() });
+  }, [queryClient]);
   const invalidDateRange = hasInvalidDateRange(search);
   const submissions = useSubmissionsList(toSubmissionListQuery(search), {
     enabled: !invalidDateRange,

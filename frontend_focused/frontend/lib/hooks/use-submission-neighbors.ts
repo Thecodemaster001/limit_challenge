@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { useIsHydrated } from '@/lib/hooks/use-is-hydrated';
-import { submissionDetailQueryOptions, useSubmissionsList } from '@/lib/hooks/use-submissions';
+import { submissionDetailQueryOptions, useSubmissionQueuePage } from '@/lib/hooks/use-submissions';
 import { rememberedListQuery, rememberListQuery } from '@/lib/list-return-path';
 import { locateInList, Neighbor } from '@/lib/submission-navigation';
 import {
@@ -31,10 +31,10 @@ export function useSubmissionNeighbors(submissionId: number) {
     [rememberedQuery],
   );
   const listQuery = search ? toSubmissionListQuery(search) : {};
-  const currentPage = useSubmissionsList(listQuery, { enabled: Boolean(search) });
+  const currentPage = useSubmissionQueuePage(listQuery, { enabled: Boolean(search) });
 
   const location =
-    search && currentPage.data && !currentPage.isPlaceholderData
+    search && currentPage.data
       ? locateInList(
           {
             ids: currentPage.data.results.map((submission) => submission.id),
@@ -52,10 +52,10 @@ export function useSubmissionNeighbors(submissionId: number) {
       : null;
   const previousPageQuery = pageQuery(location?.previous);
   const nextPageQuery = pageQuery(location?.next);
-  const previousPage = useSubmissionsList(previousPageQuery ?? listQuery, {
+  const previousPage = useSubmissionQueuePage(previousPageQuery ?? listQuery, {
     enabled: Boolean(previousPageQuery),
   });
-  const nextPage = useSubmissionsList(nextPageQuery ?? listQuery, {
+  const nextPage = useSubmissionQueuePage(nextPageQuery ?? listQuery, {
     enabled: Boolean(nextPageQuery),
   });
 

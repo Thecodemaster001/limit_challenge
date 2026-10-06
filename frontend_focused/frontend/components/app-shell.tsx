@@ -16,6 +16,7 @@ import BrandMark from '@/components/brand-mark';
 import KeyboardShortcutsDialog from '@/components/keyboard-shortcuts-dialog';
 import UserMenu from '@/components/user-menu';
 import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts';
+import { SUBMISSIONS_PATH } from '@/lib/list-return-path';
 import { saveSidebarCollapsed } from '@/lib/sidebar-preference';
 
 const SIDEBAR_WIDTH = 232;
@@ -28,7 +29,7 @@ interface NavigationItem {
 }
 
 const NAVIGATION_ITEMS: NavigationItem[] = [
-  { href: '/submissions', label: 'Submissions', icon: <InboxOutlined sx={{ fontSize: 18 }} /> },
+  { href: SUBMISSIONS_PATH, label: 'Submissions', icon: <InboxOutlined sx={{ fontSize: 18 }} /> },
 ];
 
 interface SidebarProps {

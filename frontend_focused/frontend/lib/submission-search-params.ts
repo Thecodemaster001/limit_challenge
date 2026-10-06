@@ -1,4 +1,4 @@
-import { parseApiDate, toApiDate } from '@/lib/format';
+import { isValidApiDate } from '@/lib/format';
 import { SUBMISSION_PRIORITIES, SUBMISSION_STATUSES } from '@/lib/submission-display';
 import { SubmissionPriority, SubmissionStatus } from '@/lib/types';
 
@@ -59,9 +59,7 @@ function parseText(value: string | null) {
 }
 
 function parseDate(value: string | null) {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
-  // Rejects impossible dates such as 2026-02-31, which would roll over to March.
-  return toApiDate(parseApiDate(value)) === value ? value : undefined;
+  return value && isValidApiDate(value) ? value : undefined;
 }
 
 /** Keeps known values once each, in their canonical order, so equal searches share a cache key. */
