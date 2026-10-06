@@ -34,7 +34,10 @@ const SHORTCUT_GROUPS = [
   },
   {
     title: 'Anywhere',
-    shortcuts: [{ keys: ['?'], description: 'Show keyboard shortcuts' }],
+    shortcuts: [
+      { keys: ['['], description: 'Collapse or expand the sidebar' },
+      { keys: ['?'], description: 'Show keyboard shortcuts' },
+    ],
   },
 ];
 

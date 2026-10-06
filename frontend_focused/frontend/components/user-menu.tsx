@@ -9,6 +9,7 @@ import {
   Menu,
   MenuItem,
   Skeleton,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
@@ -17,7 +18,13 @@ import KeyboardKey from '@/components/keyboard-key';
 import PersonAvatar from '@/components/person-avatar';
 import { useCurrentUser, useLogout } from '@/lib/hooks/use-auth';
 
-export default function UserMenu({ onShowShortcuts }: { onShowShortcuts: () => void }) {
+interface UserMenuProps {
+  /** Avatar only, for the collapsed sidebar. */
+  isCompact?: boolean;
+  onShowShortcuts: () => void;
+}
+
+export default function UserMenu({ isCompact = false, onShowShortcuts }: UserMenuProps) {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
@@ -31,26 +38,36 @@ export default function UserMenu({ onShowShortcuts }: { onShowShortcuts: () => v
 
   return (
     <>
-      <ButtonBase
-        onClick={(event) => setAnchorElement(event.currentTarget)}
-        aria-haspopup="menu"
-        aria-expanded={Boolean(anchorElement)}
-        sx={{
-          width: '100%',
-          justifyContent: 'flex-start',
-          gap: 1,
-          px: 1,
-          py: 0.75,
-          borderRadius: 1.5,
-          '&:hover': { bgcolor: 'action.hover' },
-        }}
-      >
-        <PersonAvatar name={displayName} size={24} />
-        <Typography noWrap sx={{ fontSize: 13, fontWeight: 500, flexGrow: 1, textAlign: 'left' }}>
-          {displayName}
-        </Typography>
-        <UnfoldMoreOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-      </ButtonBase>
+      <Tooltip title={isCompact ? displayName : ''} placement="right" describeChild>
+        <ButtonBase
+          onClick={(event) => setAnchorElement(event.currentTarget)}
+          aria-haspopup="menu"
+          aria-expanded={Boolean(anchorElement)}
+          aria-label={isCompact ? `Account menu for ${displayName}` : undefined}
+          sx={{
+            width: '100%',
+            justifyContent: isCompact ? 'center' : 'flex-start',
+            gap: 1,
+            px: 1,
+            py: 0.75,
+            borderRadius: 1.5,
+            '&:hover': { bgcolor: 'action.hover' },
+          }}
+        >
+          <PersonAvatar name={displayName} size={24} />
+          {!isCompact && (
+            <>
+              <Typography
+                noWrap
+                sx={{ fontSize: 13, fontWeight: 500, flexGrow: 1, textAlign: 'left' }}
+              >
+                {displayName}
+              </Typography>
+              <UnfoldMoreOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+            </>
+          )}
+        </ButtonBase>
+      </Tooltip>
       <Menu
         anchorEl={anchorElement}
         open={Boolean(anchorElement)}

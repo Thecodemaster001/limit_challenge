@@ -68,7 +68,8 @@ I also ran an end-to-end browser pass (Puppeteer) against the Docker stack at de
 - Sortable columns, plus a sort menu on phones
 - Adding notes and changing status, priority or owner, with optimistic updates and undo
 - Next/previous on the detail page ("3 of 15", or `j`/`k`), following the list's filters, sort and page across page boundaries, so you can work through a queue without going back to the list
-- Keyboard shortcuts: `j`/`k`, `Enter`, `/`, `Esc` and `⌘/Ctrl Enter`. Press `?` for the full list.
+- Keyboard shortcuts: `j`/`k`, `Enter`, `/`, `Esc`, `⌘/Ctrl Enter`, and `[` to collapse the sidebar. Press `?` for the full list.
+- Collapsible sidebar. The choice is stored in a cookie, so the server renders it already collapsed instead of snapping shut after load.
 - OpenAPI docs, a Docker setup with Postgres, and realistic, repeatable seed data
 
 ## Assumptions and tradeoffs
