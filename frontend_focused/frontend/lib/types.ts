@@ -80,12 +80,6 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
-export interface SubmissionListFilters {
-  status?: SubmissionStatus;
-  brokerId?: string;
-  companySearch?: string;
-}
-
 export interface CurrentUser {
   id: number;
   username: string;

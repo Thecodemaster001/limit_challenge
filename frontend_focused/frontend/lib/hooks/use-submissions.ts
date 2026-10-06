@@ -1,55 +1,47 @@
 'use client';
 
-import { useMemo } from 'react';
-import { QueryKey, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api-client';
-import {
-  PaginatedResponse,
-  SubmissionDetail,
-  SubmissionListFilters,
-  SubmissionListItem,
-} from '@/lib/types';
+import { SubmissionListQuery } from '@/lib/submission-search-params';
+import { PaginatedResponse, SubmissionDetail, SubmissionListItem } from '@/lib/types';
 
-const SUBMISSIONS_QUERY_KEY = 'submissions';
+export const submissionQueryKeys = {
+  all: ['submissions'] as const,
+  lists: () => [...submissionQueryKeys.all, 'list'] as const,
+  list: (query: SubmissionListQuery) => [...submissionQueryKeys.lists(), query] as const,
+  detail: (id: string | number) => [...submissionQueryKeys.all, 'detail', String(id)] as const,
+};
 
-async function fetchSubmissions(filters: SubmissionListFilters) {
+async function fetchSubmissions(query: SubmissionListQuery) {
   const response = await apiClient.get<PaginatedResponse<SubmissionListItem>>('/submissions/', {
-    params: {
-      status: filters.status,
-      brokerId: filters.brokerId,
-      companySearch: filters.companySearch,
-    },
+    params: query,
   });
   return response.data;
 }
 
 async function fetchSubmissionDetail(id: string | number) {
-  if (!id) {
-    throw new Error('Submission id is required');
-  }
-
   const response = await apiClient.get<SubmissionDetail>(`/submissions/${id}/`);
   return response.data;
 }
 
-export function useSubmissionsList(filters: SubmissionListFilters) {
-  return useQuery({
-    queryKey: [SUBMISSIONS_QUERY_KEY, filters] as QueryKey,
-    queryFn: () => fetchSubmissions(filters),
-    enabled: false,
-  });
-}
-
-export function useSubmissionDetail(id: string | number) {
-  return useQuery({
-    queryKey: [SUBMISSIONS_QUERY_KEY, id],
+export function submissionDetailQueryOptions(id: string | number) {
+  return queryOptions({
+    queryKey: submissionQueryKeys.detail(id),
     queryFn: () => fetchSubmissionDetail(id),
-    enabled: false,
     staleTime: 60_000,
   });
 }
 
-export function useSubmissionQueryKey(filters: SubmissionListFilters) {
-  return useMemo(() => [SUBMISSIONS_QUERY_KEY, filters] as QueryKey, [filters]);
+export function useSubmissionsList(query: SubmissionListQuery, { enabled = true } = {}) {
+  return useQuery({
+    queryKey: submissionQueryKeys.list(query),
+    queryFn: () => fetchSubmissions(query),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+}
+
+export function useSubmissionDetail(id: string | number) {
+  return useQuery({ ...submissionDetailQueryOptions(id), enabled: Boolean(id) });
 }

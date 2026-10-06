@@ -2,7 +2,6 @@
 
 import { LogoutOutlined, UnfoldMoreOutlined } from '@mui/icons-material';
 import {
-  Avatar,
   Box,
   ButtonBase,
   Divider,
@@ -12,19 +11,10 @@ import {
   Skeleton,
   Typography,
 } from '@mui/material';
-import { alpha } from '@mui/material/styles';
 import { useState } from 'react';
 
+import PersonAvatar from '@/components/person-avatar';
 import { useCurrentUser, useLogout } from '@/lib/hooks/use-auth';
-
-function initialsOf(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
-}
 
 export default function UserMenu() {
   const { data: user } = useCurrentUser();
@@ -54,18 +44,7 @@ export default function UserMenu() {
           '&:hover': { bgcolor: 'action.hover' },
         }}
       >
-        <Avatar
-          sx={(theme) => ({
-            width: 24,
-            height: 24,
-            fontSize: 11,
-            fontWeight: 600,
-            color: 'primary.main',
-            bgcolor: alpha(theme.palette.primary.main, 0.12),
-          })}
-        >
-          {initialsOf(displayName)}
-        </Avatar>
+        <PersonAvatar name={displayName} size={24} />
         <Typography noWrap sx={{ fontSize: 13, fontWeight: 500, flexGrow: 1, textAlign: 'left' }}>
           {displayName}
         </Typography>
