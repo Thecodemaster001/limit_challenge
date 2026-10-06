@@ -174,13 +174,15 @@ class Command(BaseCommand):
         fake.seed_instance(RANDOM_SEED)
         now = timezone.now()
 
-        brokers = [
-            models.Broker.objects.create(
-                name=f"{fake.unique.last_name()} & {fake.unique.last_name()} Insurance Brokers",
-                primary_contact_email=fake.company_email(),
+        brokers = []
+        for _ in range(5):
+            name = f"{fake.unique.last_name()} & {fake.unique.last_name()} Insurance Brokers"
+            brokers.append(
+                models.Broker.objects.create(
+                    name=name,
+                    primary_contact_email=f"submissions@{slugify(name)}.example.com",
+                )
             )
-            for _ in range(5)
-        ]
 
         companies = [
             models.Company.objects.create(
