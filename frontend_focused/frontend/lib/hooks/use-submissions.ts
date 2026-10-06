@@ -10,7 +10,13 @@ import {
 
 import { apiClient } from '@/lib/api-client';
 import { SubmissionListQuery } from '@/lib/submission-search-params';
-import { NoteDetail, PaginatedResponse, SubmissionDetail, SubmissionListItem } from '@/lib/types';
+import {
+  NoteDetail,
+  PaginatedResponse,
+  SubmissionDetail,
+  SubmissionListItem,
+  SubmissionTriageUpdate,
+} from '@/lib/types';
 
 export const submissionQueryKeys = {
   all: ['submissions'] as const,
@@ -105,6 +111,43 @@ export function useAddNote(submissionId: string | number, authorName: string) {
     },
     onSettled: () => {
       // The list's note count, latest note and "has notes" counts may all have changed.
+      queryClient.invalidateQueries({ queryKey: submissionQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: submissionQueryKeys.allStatusCounts() });
+    },
+  });
+}
+
+async function patchSubmission(submissionId: string | number, update: SubmissionTriageUpdate) {
+  const response = await apiClient.patch<SubmissionDetail>(`/submissions/${submissionId}/`, {
+    status: update.status,
+    priority: update.priority,
+    ownerId: update.owner?.id,
+  });
+  return response.data;
+}
+
+/** Changes status, priority or owner right away and rolls back if the server rejects it. */
+export function useUpdateSubmission(submissionId: string | number) {
+  const queryClient = useQueryClient();
+  const detailKey = submissionQueryKeys.detail(submissionId);
+
+  return useMutation({
+    mutationFn: (update: SubmissionTriageUpdate) => patchSubmission(submissionId, update),
+    onMutate: async (update) => {
+      await queryClient.cancelQueries({ queryKey: detailKey });
+      const previous = queryClient.getQueryData<SubmissionDetail>(detailKey);
+      queryClient.setQueryData<SubmissionDetail>(detailKey, (detail) =>
+        detail ? { ...detail, ...update } : detail,
+      );
+      return { previous };
+    },
+    onError: (_error, _update, context) => {
+      if (context?.previous) queryClient.setQueryData(detailKey, context.previous);
+    },
+    onSuccess: (submission) => {
+      queryClient.setQueryData(detailKey, submission);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: submissionQueryKeys.lists() });
       queryClient.invalidateQueries({ queryKey: submissionQueryKeys.allStatusCounts() });
     },

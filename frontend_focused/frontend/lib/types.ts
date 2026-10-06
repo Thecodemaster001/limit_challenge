@@ -96,3 +96,9 @@ export interface StatusCount {
   status: SubmissionStatus;
   count: number;
 }
+
+export interface SubmissionTriageUpdate {
+  status?: SubmissionStatus;
+  priority?: SubmissionPriority;
+  owner?: TeamMember;
+}

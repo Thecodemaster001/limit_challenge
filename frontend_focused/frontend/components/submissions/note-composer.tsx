@@ -44,7 +44,7 @@ export default function NoteComposer({ submissionId }: { submissionId: string | 
     addNote.mutate(body, {
       onError: (error) => {
         setDraft((current) => current || body);
-        notify(`Note not posted. ${parseApiError(error).message}`, 'error');
+        notify(`Note not posted. ${parseApiError(error).message}`, { severity: 'error' });
       },
     });
   }

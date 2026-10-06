@@ -1,12 +1,38 @@
+'use client';
+
 import { Box, Link, Typography } from '@mui/material';
 import { ReactNode } from 'react';
 
+import { useNotify } from '@/components/notifications';
 import PersonAvatar from '@/components/person-avatar';
 import RelativeTime from '@/components/relative-time';
-import PriorityIndicator from '@/components/submissions/priority-indicator';
-import StatusIndicator from '@/components/submissions/status-indicator';
+import PriorityIndicator, { PriorityBars } from '@/components/submissions/priority-indicator';
+import PropertyMenu from '@/components/submissions/property-menu';
+import StatusIndicator, { StatusDot } from '@/components/submissions/status-indicator';
+import { parseApiError } from '@/lib/api-errors';
 import { formatDate } from '@/lib/format';
-import { SubmissionDetail } from '@/lib/types';
+import { useCurrentUser } from '@/lib/hooks/use-auth';
+import { useUpdateSubmission } from '@/lib/hooks/use-submissions';
+import { useTeamMembers } from '@/lib/hooks/use-team-members';
+import {
+  PRIORITY_OPTIONS,
+  priorityOption,
+  STATUS_OPTIONS,
+  statusOption,
+} from '@/lib/submission-display';
+import { SubmissionDetail, SubmissionTriageUpdate } from '@/lib/types';
+
+const statusMenuOptions = STATUS_OPTIONS.map((option) => ({
+  value: option.value,
+  label: option.label,
+  icon: <StatusDot color={option.color} />,
+}));
+
+const priorityMenuOptions = PRIORITY_OPTIONS.map((option) => ({
+  value: option.value,
+  label: option.label,
+  icon: <PriorityBars priority={option.value} />,
+}));
 
 function Property({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -16,7 +42,7 @@ function Property({ label, children }: { label: string; children: ReactNode }) {
         gridTemplateColumns: '96px minmax(0, 1fr)',
         alignItems: 'center',
         gap: 1,
-        minHeight: 32,
+        minHeight: 34,
       }}
     >
       <Typography variant="body2" color="text.secondary" component="dt">
@@ -29,22 +55,91 @@ function Property({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+function OwnerValue({ name }: { name: string }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+      <PersonAvatar name={name} />
+      <Typography variant="body2" noWrap>
+        {name}
+      </Typography>
+    </Box>
+  );
+}
+
 export default function SubmissionProperties({ submission }: { submission: SubmissionDetail }) {
+  const updateSubmission = useUpdateSubmission(submission.id);
+  const teamMembers = useTeamMembers().data ?? [submission.owner];
+  const currentTeamMemberId = useCurrentUser().data?.teamMember?.id;
+  const notify = useNotify();
+
+  function notifyFailure(error: unknown) {
+    notify(`Couldn't update this submission. ${parseApiError(error).message}`, {
+      severity: 'error',
+    });
+  }
+
+  function applyChange(update: SubmissionTriageUpdate, description: string) {
+    const undo: SubmissionTriageUpdate = {
+      ...(update.status && { status: submission.status }),
+      ...(update.priority && { priority: submission.priority }),
+      ...(update.owner && { owner: submission.owner }),
+    };
+    updateSubmission.mutate(update, {
+      onSuccess: () =>
+        notify(description, {
+          action: {
+            label: 'Undo',
+            onClick: () => updateSubmission.mutate(undo, { onError: notifyFailure }),
+          },
+        }),
+      onError: notifyFailure,
+    });
+  }
+
+  const ownerMenuOptions = teamMembers.map((member) => ({
+    value: String(member.id),
+    label: member.id === currentTeamMemberId ? `${member.fullName} (you)` : member.fullName,
+    icon: <PersonAvatar name={member.fullName} size={20} />,
+  }));
+
   return (
     <Box component="dl" sx={{ m: 0 }}>
       <Property label="Status">
-        <StatusIndicator status={submission.status} />
+        <PropertyMenu
+          label="Status"
+          value={submission.status}
+          options={statusMenuOptions}
+          onSelect={(status) =>
+            applyChange({ status }, `Status changed to ${statusOption(status).label}`)
+          }
+        >
+          <StatusIndicator status={submission.status} />
+        </PropertyMenu>
       </Property>
       <Property label="Priority">
-        <PriorityIndicator priority={submission.priority} />
+        <PropertyMenu
+          label="Priority"
+          value={submission.priority}
+          options={priorityMenuOptions}
+          onSelect={(priority) =>
+            applyChange({ priority }, `Priority set to ${priorityOption(priority).label}`)
+          }
+        >
+          <PriorityIndicator priority={submission.priority} />
+        </PropertyMenu>
       </Property>
       <Property label="Owner">
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <PersonAvatar name={submission.owner.fullName} />
-          <Typography variant="body2" noWrap>
-            {submission.owner.fullName}
-          </Typography>
-        </Box>
+        <PropertyMenu
+          label="Owner"
+          value={String(submission.owner.id)}
+          options={ownerMenuOptions}
+          onSelect={(ownerId) => {
+            const owner = teamMembers.find((member) => String(member.id) === ownerId);
+            if (owner) applyChange({ owner }, `Assigned to ${owner.fullName}`);
+          }}
+        >
+          <OwnerValue name={submission.owner.fullName} />
+        </PropertyMenu>
       </Property>
       <Property label="Broker">
         <Typography variant="body2" noWrap title={submission.broker.name}>
