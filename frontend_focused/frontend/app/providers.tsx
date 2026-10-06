@@ -6,6 +6,7 @@ import { isAxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 import { PropsWithChildren, useEffect, useState } from 'react';
 
+import { NotificationProvider } from '@/components/notifications';
 import { onSessionExpired } from '@/lib/api-client';
 import { theme } from '@/lib/theme';
 
@@ -48,7 +49,7 @@ export default function Providers({ children }: PropsWithChildren) {
       <SessionExpiredRedirect />
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {children}
+        <NotificationProvider>{children}</NotificationProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

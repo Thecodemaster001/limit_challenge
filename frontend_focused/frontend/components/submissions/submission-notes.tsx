@@ -4,14 +4,21 @@ import { Box, Stack, Typography } from '@mui/material';
 import PersonAvatar from '@/components/person-avatar';
 import RelativeTime from '@/components/relative-time';
 import SectionHeading from '@/components/section-heading';
+import { isPendingNote } from '@/lib/hooks/use-submissions';
 import { NoteDetail } from '@/lib/types';
 
-export default function SubmissionNotes({ notes }: { notes: NoteDetail[] }) {
+interface SubmissionNotesProps {
+  notes: NoteDetail[];
+  composer?: React.ReactNode;
+}
+
+export default function SubmissionNotes({ notes, composer }: SubmissionNotesProps) {
   return (
     <Box component="section" aria-labelledby="notes-heading">
       <SectionHeading count={notes.length}>
         <span id="notes-heading">Notes</span>
       </SectionHeading>
+      {composer}
       {notes.length === 0 ? (
         <Box
           sx={{
@@ -33,7 +40,15 @@ export default function SubmissionNotes({ notes }: { notes: NoteDetail[] }) {
             <Box
               component="li"
               key={note.id}
-              sx={{ display: 'flex', gap: 1.5, position: 'relative', pb: 2.5 }}
+              aria-busy={isPendingNote(note)}
+              sx={{
+                display: 'flex',
+                gap: 1.5,
+                position: 'relative',
+                pb: 2.5,
+                opacity: isPendingNote(note) ? 0.6 : 1,
+                transition: 'opacity 160ms',
+              }}
             >
               {index < notes.length - 1 && (
                 <Box
@@ -54,7 +69,13 @@ export default function SubmissionNotes({ notes }: { notes: NoteDetail[] }) {
                   <Typography variant="body2" sx={{ fontWeight: 500 }}>
                     {note.authorName}
                   </Typography>
-                  <RelativeTime value={note.createdAt} sx={{ fontSize: 12 }} />
+                  {isPendingNote(note) ? (
+                    <Typography variant="caption" color="text.secondary">
+                      Posting…
+                    </Typography>
+                  ) : (
+                    <RelativeTime value={note.createdAt} sx={{ fontSize: 12 }} />
+                  )}
                 </Box>
                 <Typography
                   variant="body2"

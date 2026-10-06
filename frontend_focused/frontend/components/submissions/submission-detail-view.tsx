@@ -8,6 +8,7 @@ import { useSyncExternalStore } from 'react';
 
 import { EmptyState, ErrorState } from '@/components/page-states';
 import SectionHeading from '@/components/section-heading';
+import NoteComposer from '@/components/submissions/note-composer';
 import SubmissionContacts from '@/components/submissions/submission-contacts';
 import SubmissionDocuments from '@/components/submissions/submission-documents';
 import SubmissionNotes from '@/components/submissions/submission-notes';
@@ -136,7 +137,10 @@ function SubmissionDetailContent({ submission }: { submission: SubmissionDetail 
               {submission.summary || 'No summary was provided with this submission.'}
             </Typography>
           </Box>
-          <SubmissionNotes notes={submission.notes} />
+          <SubmissionNotes
+            notes={submission.notes}
+            composer={<NoteComposer submissionId={submission.id} />}
+          />
         </Stack>
       }
     />

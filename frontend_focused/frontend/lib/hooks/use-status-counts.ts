@@ -4,9 +4,8 @@ import { keepPreviousData, useQueries } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api-client';
 import { SubmissionListQuery } from '@/lib/submission-search-params';
+import { submissionQueryKeys } from '@/lib/hooks/use-submissions';
 import { StatusCount } from '@/lib/types';
-
-import { submissionQueryKeys } from './use-submissions';
 
 async function fetchStatusCounts(query: SubmissionListQuery) {
   const response = await apiClient.get<StatusCount[]>('/submissions/status-counts/', {
@@ -19,7 +18,7 @@ async function fetchStatusCounts(query: SubmissionListQuery) {
 export function useStatusCounts(queries: SubmissionListQuery[], { enabled = true } = {}) {
   return useQueries({
     queries: queries.map((query) => ({
-      queryKey: [...submissionQueryKeys.all, 'status-counts', query],
+      queryKey: submissionQueryKeys.statusCounts(query),
       queryFn: () => fetchStatusCounts(query),
       placeholderData: keepPreviousData,
       enabled,
