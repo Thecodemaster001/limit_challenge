@@ -6,7 +6,9 @@ import { isAxiosError } from 'axios';
 
 import { EmptyState, ErrorState } from '@/components/page-states';
 import ActiveFilterChips from '@/components/submissions/active-filter-chips';
-import SubmissionFilterBar from '@/components/submissions/submission-filter-bar';
+import SubmissionFilterBar, {
+  SEARCH_INPUT_ID,
+} from '@/components/submissions/submission-filter-bar';
 import SubmissionPagination from '@/components/submissions/submission-pagination';
 import SubmissionViewTabs from '@/components/submissions/submission-view-tabs';
 import SubmissionTable, {
@@ -14,6 +16,7 @@ import SubmissionTable, {
 } from '@/components/submissions/submission-table';
 import { useCurrentUser } from '@/lib/hooks/use-auth';
 import { useBrokerOptions } from '@/lib/hooks/use-broker-options';
+import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts';
 import { useStatusCounts } from '@/lib/hooks/use-status-counts';
 import { useSubmissionSearch } from '@/lib/hooks/use-submission-search';
 import { useSubmissionsList } from '@/lib/hooks/use-submissions';
@@ -25,6 +28,7 @@ import {
   SubmissionSearch,
   toSubmissionListQuery,
 } from '@/lib/submission-search-params';
+import { nextIndex } from '@/lib/keyboard-shortcuts';
 import { activeViewId, SUBMISSION_VIEWS, SubmissionViewId } from '@/lib/submission-views';
 
 /** The API query for counts: filters only, without sorting or paging. */
@@ -54,6 +58,17 @@ function PageHeader({ totalCount }: { totalCount?: number }) {
   );
 }
 
+/** Moves keyboard focus between the visible row links; Enter then opens the focused row. */
+function focusAdjacentRow(step: number) {
+  const links = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>('[data-submission-link]'),
+  ).filter((link) => link.offsetParent !== null);
+  const currentIndex = links.indexOf(document.activeElement as HTMLAnchorElement);
+  const target = links[nextIndex(currentIndex, step, links.length)];
+  target?.focus();
+  target?.scrollIntoView({ block: 'nearest' });
+}
+
 function isPageOutOfRange(error: unknown, page: number) {
   return page > 1 && isAxiosError(error) && error.response?.status === 404;
 }
@@ -70,6 +85,12 @@ export default function SubmissionsWorkspace() {
   const hasFilters = countActiveFilters(search) > 0;
   const [statusMenuCounts] = useStatusCounts([countsQuery(search, { status: [] })], {
     enabled: !invalidDateRange,
+  });
+
+  useKeyboardShortcuts({
+    j: () => focusAdjacentRow(1),
+    k: () => focusAdjacentRow(-1),
+    '/': () => document.getElementById(SEARCH_INPUT_ID)?.focus(),
   });
 
   function selectView(viewId: SubmissionViewId) {

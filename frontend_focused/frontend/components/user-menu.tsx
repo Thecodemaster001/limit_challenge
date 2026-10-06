@@ -1,6 +1,6 @@
 'use client';
 
-import { LogoutOutlined, UnfoldMoreOutlined } from '@mui/icons-material';
+import { KeyboardOutlined, LogoutOutlined, UnfoldMoreOutlined } from '@mui/icons-material';
 import {
   Box,
   ButtonBase,
@@ -13,10 +13,11 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 
+import KeyboardKey from '@/components/keyboard-key';
 import PersonAvatar from '@/components/person-avatar';
 import { useCurrentUser, useLogout } from '@/lib/hooks/use-auth';
 
-export default function UserMenu() {
+export default function UserMenu({ onShowShortcuts }: { onShowShortcuts: () => void }) {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
@@ -67,6 +68,20 @@ export default function UserMenu() {
           )}
         </Box>
         <Divider sx={{ my: 0.5 }} />
+        <MenuItem
+          onClick={() => {
+            setAnchorElement(null);
+            onShowShortcuts();
+          }}
+        >
+          <ListItemIcon>
+            <KeyboardOutlined fontSize="small" />
+          </ListItemIcon>
+          <Box component="span" sx={{ flexGrow: 1 }}>
+            Keyboard shortcuts
+          </Box>
+          <KeyboardKey>?</KeyboardKey>
+        </MenuItem>
         <MenuItem onClick={() => logout.mutate()} disabled={logout.isPending}>
           <ListItemIcon>
             <LogoutOutlined fontSize="small" />

@@ -4,6 +4,7 @@ import { ChevronRightOutlined, SearchOffOutlined } from '@mui/icons-material';
 import { Box, Button, Divider, Link, Skeleton, Stack, Typography } from '@mui/material';
 import { isAxiosError } from 'axios';
 import NextLink from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSyncExternalStore } from 'react';
 
 import { EmptyState, ErrorState } from '@/components/page-states';
@@ -14,6 +15,7 @@ import SubmissionDocuments from '@/components/submissions/submission-documents';
 import SubmissionNotes from '@/components/submissions/submission-notes';
 import SubmissionProperties from '@/components/submissions/submission-properties';
 import { formatDate } from '@/lib/format';
+import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts';
 import { useSubmissionDetail } from '@/lib/hooks/use-submissions';
 import { listReturnPath } from '@/lib/list-return-path';
 import { SubmissionDetail } from '@/lib/types';
@@ -185,6 +187,9 @@ function SubmissionDetailSkeleton() {
 export default function SubmissionDetailView({ submissionId }: { submissionId: string }) {
   const detail = useSubmissionDetail(submissionId);
   const returnPath = useListReturnPath();
+  const router = useRouter();
+
+  useKeyboardShortcuts({ Escape: () => router.push(returnPath) });
 
   if (detail.isPending) return <SubmissionDetailSkeleton />;
 

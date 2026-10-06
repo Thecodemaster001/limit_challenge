@@ -8,7 +8,9 @@ import { usePathname } from 'next/navigation';
 import { PropsWithChildren, ReactNode, useState } from 'react';
 
 import BrandMark from '@/components/brand-mark';
+import KeyboardShortcutsDialog from '@/components/keyboard-shortcuts-dialog';
 import UserMenu from '@/components/user-menu';
+import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts';
 
 const SIDEBAR_WIDTH = 232;
 
@@ -22,7 +24,12 @@ const NAVIGATION_ITEMS: NavigationItem[] = [
   { href: '/submissions', label: 'Submissions', icon: <InboxOutlined sx={{ fontSize: 18 }} /> },
 ];
 
-function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+interface SidebarProps {
+  onNavigate?: () => void;
+  onShowShortcuts: () => void;
+}
+
+function Sidebar({ onNavigate, onShowShortcuts }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -60,13 +67,17 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           );
         })}
       </Box>
-      <UserMenu />
+      <UserMenu onShowShortcuts={onShowShortcuts} />
     </Box>
   );
 }
 
 export default function AppShell({ children }: PropsWithChildren) {
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
+  const [isShortcutsDialogOpen, setIsShortcutsDialogOpen] = useState(false);
+  const showShortcuts = () => setIsShortcutsDialogOpen(true);
+
+  useKeyboardShortcuts({ '?': showShortcuts });
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -80,7 +91,7 @@ export default function AppShell({ children }: PropsWithChildren) {
           height: '100vh',
         }}
       >
-        <Sidebar />
+        <Sidebar onShowShortcuts={showShortcuts} />
       </Box>
 
       <Drawer
@@ -89,7 +100,13 @@ export default function AppShell({ children }: PropsWithChildren) {
         sx={{ display: { md: 'none' } }}
         slotProps={{ paper: { sx: { width: SIDEBAR_WIDTH, bgcolor: 'background.default' } } }}
       >
-        <Sidebar onNavigate={() => setIsMobileNavigationOpen(false)} />
+        <Sidebar
+          onNavigate={() => setIsMobileNavigationOpen(false)}
+          onShowShortcuts={() => {
+            setIsMobileNavigationOpen(false);
+            showShortcuts();
+          }}
+        />
       </Drawer>
 
       <Box
@@ -119,6 +136,10 @@ export default function AppShell({ children }: PropsWithChildren) {
         </Box>
         <Box component="main">{children}</Box>
       </Box>
+      <KeyboardShortcutsDialog
+        open={isShortcutsDialogOpen}
+        onClose={() => setIsShortcutsDialogOpen(false)}
+      />
     </Box>
   );
 }

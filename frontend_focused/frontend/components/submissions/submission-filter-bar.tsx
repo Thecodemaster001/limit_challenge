@@ -4,6 +4,7 @@ import { SearchOutlined } from '@mui/icons-material';
 import { Box, InputAdornment, Stack } from '@mui/material';
 
 import { DebouncedTextField } from '@/components/debounced-text-field';
+import KeyboardKey from '@/components/keyboard-key';
 import FilterMenu from '@/components/submissions/filter-menu';
 import MoreFiltersPopover from '@/components/submissions/more-filters-popover';
 import { PriorityBars } from '@/components/submissions/priority-indicator';
@@ -12,6 +13,8 @@ import { StatusDot } from '@/components/submissions/status-indicator';
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from '@/lib/submission-display';
 import { SubmissionSearch } from '@/lib/submission-search-params';
 import { Broker, StatusCount, SubmissionPriority, SubmissionStatus, TeamMember } from '@/lib/types';
+
+export const SEARCH_INPUT_ID = 'submission-company-search';
 
 interface SubmissionFilterBarProps {
   search: SubmissionSearch;
@@ -58,11 +61,16 @@ export default function SubmissionFilterBar({
         type="search"
         sx={{ width: { xs: '100%', sm: 240 } }}
         slotProps={{
-          htmlInput: { 'aria-label': 'Search companies' },
+          htmlInput: { 'aria-label': 'Search companies', id: SEARCH_INPUT_ID },
           input: {
             startAdornment: (
               <InputAdornment position="start">
                 <SearchOutlined sx={{ fontSize: 18 }} />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end" sx={{ display: { xs: 'none', md: 'flex' } }}>
+                <KeyboardKey>/</KeyboardKey>
               </InputAdornment>
             ),
           },

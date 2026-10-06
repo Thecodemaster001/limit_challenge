@@ -5,6 +5,7 @@ import { alpha } from '@mui/material/styles';
 import { KeyboardEvent, useState, useSyncExternalStore } from 'react';
 
 import { useNotify } from '@/components/notifications';
+import KeyboardKey from '@/components/keyboard-key';
 import PersonAvatar from '@/components/person-avatar';
 import { parseApiError } from '@/lib/api-errors';
 import { useCurrentUser } from '@/lib/hooks/use-auth';
@@ -94,13 +95,8 @@ export default function NoteComposer({ submissionId }: { submissionId: string | 
               </Box>
             ) : (
               <>
-                <Box
-                  component="kbd"
-                  sx={{ fontFamily: 'inherit', fontSize: 11, color: 'text.primary' }}
-                >
-                  {shortcutModifier} Enter
-                </Box>{' '}
-                to post
+                <KeyboardKey>{shortcutModifier}</KeyboardKey> <KeyboardKey>Enter</KeyboardKey> to
+                post
               </>
             )}
           </Typography>

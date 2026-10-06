@@ -180,7 +180,13 @@ export default function SubmissionTable({
               onMouseEnter={() => prefetchDetail(submission)}
             >
               <TableCell sx={{ pl: 3 }}>
-                <Link component={NextLink} href={detailHref(submission)} sx={stretchedLink} noWrap>
+                <Link
+                  component={NextLink}
+                  href={detailHref(submission)}
+                  sx={stretchedLink}
+                  noWrap
+                  data-submission-link
+                >
                   {submission.company.legalName}
                 </Link>
                 <Typography variant="caption" color="text.secondary" component="p" noWrap>
@@ -237,7 +243,13 @@ export default function SubmissionTable({
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-              <Link component={NextLink} href={detailHref(submission)} sx={stretchedLink} noWrap>
+              <Link
+                component={NextLink}
+                href={detailHref(submission)}
+                sx={stretchedLink}
+                noWrap
+                data-submission-link
+              >
                 {submission.company.legalName}
               </Link>
               <RelativeTime value={submission.createdAt} sx={{ fontSize: 12 }} />
